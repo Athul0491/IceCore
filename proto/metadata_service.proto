@@ -1,0 +1,186 @@
+syntax = "proto3";
+
+package metadata;
+option go_package = "github.com/Athul0491/IceCore/gen/metadata;metadata";
+
+service MetadataService {
+    rpc CreateTable(CreateTableRequest) returns (OperationResponse);
+    rpc GetTableMetadata(TableRequest) returns (TableMetadataResponse);
+    rpc AlterTable(AlterTableRequest) returns (OperationResponse);
+    rpc DropTable(DropTableRequest) returns (OperationResponse);
+    rpc ListTables(ListTablesRequest) returns (ListTablesResponse);
+
+    rpc GetPartitions(PartitionRequest) returns (PartitionListResponse);
+    rpc GetPartitionStats(PartitionStatsRequest) returns (PartitionStatsResponse);
+
+    rpc CommitSnapshot(SnapshotRequest) returns (SnapshotResponse);
+    rpc GetSnapshot(GetSnapshotRequest) returns (SnapshotDetail);
+    rpc ListSnapshots(ListSnapshotsRequest) returns (ListSnapshotsResponse);
+
+    rpc BeginTransaction(TransactionRequest) returns (TransactionResponse);
+    rpc CommitTransaction(CommitRequest) returns (OperationResponse);
+    rpc AbortTransaction(AbortRequest) returns (OperationResponse);
+}
+
+
+message CreateTableRequest {
+    string table_name = 1;
+    string schema_json = 2;
+    string partition_spec = 3;
+    map<string, string> properties = 4;
+}
+
+message TableRequest {
+    string table_name = 1;
+    uint64 snapshot_id = 2;
+}
+
+message TableMetadataResponse {
+    string table_name = 1;
+    string schema_json = 2;
+    uint64 current_snapshot_id = 3;
+    int32 schema_version = 4;
+    repeated PartitionInfo partitions = 5;
+    map<string, string> properties = 6;
+    int64 total_row_count = 7;
+    int64 total_size_bytes = 8;
+}
+
+message AlterTableRequest {
+    string table_name = 1;
+    oneof alteration {
+        string new_schema_json = 2;
+        string new_partition_spec = 3;
+        RenameTable rename = 4;
+    }
+}
+
+message RenameTable {
+    string new_name = 1;
+}
+
+message DropTableRequest {
+    string table_name = 1;
+    bool purge = 2;
+}
+
+message ListTablesRequest {
+    string namespace = 1;
+    int32 page_size = 2;
+    string page_token = 3;
+}
+
+message ListTablesResponse {
+    repeated TableSummary tables = 1;
+    string next_page_token = 2;
+}
+
+message TableSummary {
+    string table_name = 1;
+    uint64 current_snapshot_id = 2;
+    int64 total_partitions = 3;
+}
+
+
+message PartitionInfo {
+    string partition_key = 1;
+    string data_file_path = 2;
+    int64 row_count = 3;
+    int64 size_bytes = 4;
+    uint64 snapshot_id = 5;
+    string file_format = 6;
+    map<string, string> column_stats = 7;
+}
+
+message PartitionRequest {
+    string table_name = 1;
+    string filter_expr = 2;
+    uint64 snapshot_id = 3;
+    int32 page_size = 4;
+    string page_token = 5;
+}
+
+message PartitionListResponse {
+    repeated PartitionInfo partitions = 1;
+    string next_page_token = 2;
+    int64 total_count = 3;
+}
+
+message PartitionStatsRequest {
+    string table_name = 1;
+}
+
+message PartitionStatsResponse {
+    int64 total_partitions = 1;
+    int64 total_rows = 2;
+    int64 total_bytes = 3;
+    int64 avg_partition_size_bytes = 4;
+}
+
+
+message SnapshotRequest {
+    string table_name = 1;
+    repeated PartitionInfo new_partitions = 2;
+    repeated string deleted_partition_keys = 3;
+    uint64 parent_snapshot_id = 4;
+    string operation = 5;
+}
+
+message SnapshotResponse {
+    uint64 snapshot_id = 1;
+    bool success = 2;
+    string error_msg = 3;
+}
+
+message GetSnapshotRequest {
+    string table_name = 1;
+    uint64 snapshot_id = 2;
+}
+
+message SnapshotDetail {
+    uint64 snapshot_id = 1;
+    uint64 parent_snapshot_id = 2;
+    string operation = 3;
+    int64 added_partitions = 4;
+    int64 deleted_partitions = 5;
+    string committed_at = 6;
+}
+
+message ListSnapshotsRequest {
+    string table_name = 1;
+    int32 limit = 2;
+}
+
+message ListSnapshotsResponse {
+    repeated SnapshotDetail snapshots = 1;
+}
+
+
+message TransactionRequest {
+    string client_id = 1;
+    IsolationLevel isolation = 2;
+}
+
+enum IsolationLevel {
+    SNAPSHOT = 0;
+    READ_COMMITTED = 1;
+}
+
+message TransactionResponse {
+    uint64 txn_id = 1;
+    uint64 read_snapshot_id = 2;
+}
+
+message CommitRequest {
+    uint64 txn_id = 1;
+}
+
+message AbortRequest {
+    uint64 txn_id = 1;
+}
+
+
+message OperationResponse {
+    bool success = 1;
+    string error_msg = 2;
+}
