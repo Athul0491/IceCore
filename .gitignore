@@ -1,0 +1,77 @@
+# =========================
+# Go
+# =========================
+bin/
+build/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go modules
+vendor/
+go.work
+
+# =========================
+# Generated files
+# =========================
+# Protobuf generated code
+gen/
+
+# (optional: if you want to keep gen/ in repo, comment above)
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+*.tmp
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDEs / Editors
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# Environment files
+# =========================
+.env
+.env.local
+.env.*
+
+# =========================
+# Docker
+# =========================
+docker-data/
+*.tar
+
+# =========================
+# Database / local data
+# =========================
+*.db
+*.sqlite
+
+# =========================
+# Test / temp files
+# =========================
+tmp/
+temp/
+*.cache
+
+# =========================
+# Misc
+# =========================
+coverage.out
