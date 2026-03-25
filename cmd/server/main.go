@@ -12,6 +12,7 @@ import (
 	"github.com/Athul0491/IceCore/internal/config"
 	"github.com/Athul0491/IceCore/internal/server"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -36,7 +37,8 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	metadata.RegisterMetadataServiceServer(grpcServer, svc)
-
+	reflection.Register(grpcServer)
+	
 	errCh := make(chan error, 1)
 	go func() {
 		log.Printf("[main] server listening on %s\n", cfg.GRPCAddress)
