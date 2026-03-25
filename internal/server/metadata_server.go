@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
-	"github.com/Athul0491/IceCore/gen/metadata"
+	metadata "github.com/Athul0491/IceCore/gen/metadata"
 	"github.com/Athul0491/IceCore/internal/catalog"
 	"github.com/Athul0491/IceCore/internal/config"
 	"github.com/Athul0491/IceCore/internal/db"
@@ -25,6 +26,13 @@ type MetadataServer struct {
 	catalog    *catalog.CatalogManager
 	partitions *catalog.PartitionRegistry
 	schemas    *catalog.SchemaStore
+}
+
+func defaultString(v, fallback string) string {
+	if v == "" {
+		return fallback
+	}
+	return v
 }
 
 func New(cfg config.Config) (*MetadataServer, error) {
@@ -91,21 +99,44 @@ func (s *MetadataServer) GetTableMetadata(ctx context.Context, req *metadata.Tab
 		return nil, status.Error(codes.NotFound, "table not found: "+req.GetTableName())
 	}
 
-	readSnapshot := req.GetSnapshotId()
-	if readSnapshot == 0 {
-		readSnapshot = uint64(table.CurrentSnapshotID)
+	// get current snapshot id
+	currentSnapshot := table.CurrentSnapshotID
+
+	// fetch partitions
+	parts, err := s.partitions.GetPartitions(ctx, req.GetTableName(), currentSnapshot)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &metadata.TableMetadataResponse{
-		TableName:         table.TableName,
-		SchemaJson:        table.SchemaJSON,
-		CurrentSnapshotId: readSnapshot,
-		SchemaVersion:     table.SchemaVersion,
-		Properties:        map[string]string{},
-		TotalRowCount:     0,
-		TotalSizeBytes:    0,
-		Partitions:        nil,
-	}, nil
+	resp := &metadata.TableMetadataResponse{
+		TableName:      table.TableName,
+		SchemaJson:     table.SchemaJSON,
+		SchemaVersion:  table.SchemaVersion,
+		SnapshotId:     currentSnapshot,
+		Partitions:     make([]*metadata.PartitionInfo, 0),
+	}
+
+	var totalRows int64
+	var totalBytes int64
+
+	for _, p := range parts {
+		resp.Partitions = append(resp.Partitions, &metadata.PartitionInfo{
+			PartitionKey: p.PartitionKey,
+			DataFilePath: p.DataFilePath,
+			RowCount:     p.RowCount,
+			SizeBytes:    p.SizeBytes,
+			SnapshotId:   uint64(p.SnapshotID),
+			FileFormat:   p.FileFormat,
+		})
+
+		totalRows += p.RowCount
+		totalBytes += p.SizeBytes
+	}
+
+	resp.TotalRows = totalRows
+	resp.TotalBytes = totalBytes
+
+	return resp, nil
 }
 
 func (s *MetadataServer) AlterTable(ctx context.Context, req *metadata.AlterTableRequest) (*metadata.OperationResponse, error) {
@@ -121,15 +152,105 @@ func (s *MetadataServer) ListTables(ctx context.Context, req *metadata.ListTable
 }
 
 func (s *MetadataServer) GetPartitions(ctx context.Context, req *metadata.PartitionRequest) (*metadata.PartitionListResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "GetPartitions not implemented yet")
+	var (
+		rows []db.PartitionRow
+		err  error
+	)
+
+	lastID := int64(0)
+	if req.GetPageToken() != "" {
+		if parsed, parseErr := strconv.ParseInt(req.GetPageToken(), 10, 64); parseErr == nil {
+			lastID = parsed
+		}
+	}
+
+	if req.GetPageSize() > 0 {
+		rows, err = s.partitions.GetPartitionsPaged(
+			ctx,
+			req.GetTableName(),
+			req.GetSnapshotId(),
+			req.GetPageSize(),
+			lastID,
+		)
+	} else {
+		rows, err = s.partitions.GetPartitions(
+			ctx,
+			req.GetTableName(),
+			req.GetSnapshotId(),
+		)
+	}
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if rows == nil {
+		return nil, status.Error(codes.NotFound, "table not found: "+req.GetTableName())
+	}
+
+	resp := &metadata.PartitionListResponse{
+		Partitions: make([]*metadata.PartitionInfo, 0, len(rows)),
+		TotalCount: int64(len(rows)),
+	}
+
+	for _, p := range rows {
+		resp.Partitions = append(resp.Partitions, &metadata.PartitionInfo{
+			PartitionKey: p.PartitionKey,
+			DataFilePath: p.DataFilePath,
+			RowCount:     p.RowCount,
+			SizeBytes:    p.SizeBytes,
+			SnapshotId:   uint64(p.SnapshotID),
+			FileFormat:   p.FileFormat,
+		})
+	}
+
+	if req.GetPageSize() > 0 && len(rows) > 0 {
+		resp.NextPageToken = strconv.FormatInt(rows[len(rows)-1].PartitionID, 10)
+	}
+
+	return resp, nil
 }
 
 func (s *MetadataServer) GetPartitionStats(ctx context.Context, req *metadata.PartitionStatsRequest) (*metadata.PartitionStatsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "GetPartitionStats not implemented yet")
+	stats, err := s.partitions.GetStats(ctx, req.GetTableName())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &metadata.PartitionStatsResponse{
+		TotalPartitions:      stats.TotalPartitions,
+		TotalRows:            stats.TotalRows,
+		TotalBytes:           stats.TotalBytes,
+		AvgPartitionSizeBytes: stats.AvgSizeBytes,
+	}, nil
 }
 
 func (s *MetadataServer) CommitSnapshot(ctx context.Context, req *metadata.SnapshotRequest) (*metadata.SnapshotResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "CommitSnapshot not implemented yet")
+	newParts := make([]db.PartitionRow, 0, len(req.GetNewPartitions()))
+	for _, p := range req.GetNewPartitions() {
+		newParts = append(newParts, db.PartitionRow{
+			PartitionKey:    p.GetPartitionKey(),
+			DataFilePath:    p.GetDataFilePath(),
+			FileFormat:      defaultString(p.GetFileFormat(), "parquet"),
+			RowCount:        p.GetRowCount(),
+			SizeBytes:       p.GetSizeBytes(),
+			ColumnStatsJSON: "{}",
+		})
+	}
+
+	result := s.partitions.CommitSnapshot(
+		ctx,
+		req.GetTableName(),
+		req.GetParentSnapshotId(),
+		defaultString(req.GetOperation(), "append"),
+		newParts,
+		req.GetDeletedPartitionKeys(),
+	)
+
+	return &metadata.SnapshotResponse{
+		Success:   result.Success,
+		SnapshotId: result.SnapshotID,
+		ErrorMsg:  result.ErrorMsg,
+	}, nil
 }
 
 func (s *MetadataServer) GetSnapshot(ctx context.Context, req *metadata.GetSnapshotRequest) (*metadata.SnapshotDetail, error) {

@@ -1,0 +1,14 @@
+{
+  "table_name": "events",
+  "parent_snapshot_id": 0,
+  "operation": "append",
+  "new_partitions": [
+    {
+      "partition_key": "month=2025-01",
+      "data_file_path": "s3://bucket/events/month=2025-01/part-0.parquet",
+      "row_count": 100000,
+      "size_bytes": 15000000,
+      "file_format": "parquet"
+    }
+  ]
+}

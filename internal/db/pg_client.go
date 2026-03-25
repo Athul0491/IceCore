@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -370,4 +371,252 @@ func pgtypeInt8Scan(s string, out *int64) (int64, error) {
 	v *= sign
 	*out = v
 	return v, nil
+}
+
+func (c *PGClient) QueryPartitions(
+	ctx context.Context,
+	tableName string,
+	snapshotID uint64,
+) ([]PartitionRow, error) {
+	tableID, err := c.GetTableID(ctx, tableName)
+	if err != nil {
+		return nil, err
+	}
+	if tableID < 0 {
+		return nil, nil
+	}
+
+	rows, err := c.Pool.Query(
+		ctx,
+		`SELECT partition_id, table_id, snapshot_id, partition_key,
+		        data_file_path, file_format, row_count, size_bytes, column_stats::text
+		   FROM partitions
+		  WHERE table_id = $1
+		    AND snapshot_id <= $2
+		    AND (is_deleted = false OR deleted_snapshot_id > $2)
+		  ORDER BY partition_id`,
+		tableID, int64(snapshotID),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]PartitionRow, 0)
+	for rows.Next() {
+		var r PartitionRow
+		if err := rows.Scan(
+			&r.PartitionID,
+			&r.TableID,
+			&r.SnapshotID,
+			&r.PartitionKey,
+			&r.DataFilePath,
+			&r.FileFormat,
+			&r.RowCount,
+			&r.SizeBytes,
+			&r.ColumnStatsJSON,
+		); err != nil {
+			return nil, err
+		}
+		result = append(result, r)
+	}
+
+	return result, rows.Err()
+}
+
+func (c *PGClient) QueryPartitionsPaged(
+	ctx context.Context,
+	tableName string,
+	snapshotID uint64,
+	pageSize int32,
+	lastPartitionID int64,
+) ([]PartitionRow, error) {
+	tableID, err := c.GetTableID(ctx, tableName)
+	if err != nil {
+		return nil, err
+	}
+	if tableID < 0 {
+		return nil, nil
+	}
+
+	if pageSize <= 0 {
+		pageSize = 1000
+	}
+
+	rows, err := c.Pool.Query(
+		ctx,
+		`SELECT partition_id, table_id, snapshot_id, partition_key,
+		        data_file_path, file_format, row_count, size_bytes, column_stats::text
+		   FROM partitions
+		  WHERE table_id = $1
+		    AND snapshot_id <= $2
+		    AND (is_deleted = false OR deleted_snapshot_id > $2)
+		    AND partition_id > $3
+		  ORDER BY partition_id
+		  LIMIT $4`,
+		tableID, int64(snapshotID), lastPartitionID, pageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]PartitionRow, 0)
+	for rows.Next() {
+		var r PartitionRow
+		if err := rows.Scan(
+			&r.PartitionID,
+			&r.TableID,
+			&r.SnapshotID,
+			&r.PartitionKey,
+			&r.DataFilePath,
+			&r.FileFormat,
+			&r.RowCount,
+			&r.SizeBytes,
+			&r.ColumnStatsJSON,
+		); err != nil {
+			return nil, err
+		}
+		result = append(result, r)
+	}
+
+	return result, rows.Err()
+}
+
+func (c *PGClient) InsertSnapshotTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	tableName string,
+	parentSnapshotID uint64,
+	operation string,
+	addedCount int32,
+	deletedCount int32,
+) (uint64, error) {
+	var tableID int64
+	err := tx.QueryRow(
+		ctx,
+		`SELECT table_id
+		   FROM tables
+		  WHERE table_name = $1 AND is_deleted = false`,
+		tableName,
+	).Scan(&tableID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	var snapshotID int64
+	err = tx.QueryRow(
+		ctx,
+		`INSERT INTO snapshots (
+		     table_id, parent_snapshot_id, operation,
+		     added_files_count, deleted_files_count
+		 )
+		 VALUES ($1, $2, $3, $4, $5)
+		 RETURNING snapshot_id`,
+		tableID, int64(parentSnapshotID), operation, addedCount, deletedCount,
+	).Scan(&snapshotID)
+	if err != nil {
+		return 0, err
+	}
+
+	if snapshotID < 0 {
+		return 0, nil
+	}
+	return uint64(snapshotID), nil
+}
+
+func (c *PGClient) InsertPartitionTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	tableName string,
+	snapshotID uint64,
+	part PartitionRow,
+) error {
+	var tableID int64
+	err := tx.QueryRow(
+		ctx,
+		`SELECT table_id
+		   FROM tables
+		  WHERE table_name = $1 AND is_deleted = false`,
+		tableName,
+	).Scan(&tableID)
+	if err != nil {
+		return err
+	}
+
+	columnStats := part.ColumnStatsJSON
+	if columnStats == "" {
+		columnStats = "{}"
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		`INSERT INTO partitions (
+		     table_id, snapshot_id, partition_key, data_file_path,
+		     file_format, row_count, size_bytes, column_stats
+		 )
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)`,
+		tableID,
+		int64(snapshotID),
+		part.PartitionKey,
+		part.DataFilePath,
+		part.FileFormat,
+		part.RowCount,
+		part.SizeBytes,
+		columnStats,
+	)
+	return err
+}
+
+func (c *PGClient) MarkPartitionDeletedTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	tableName string,
+	partitionKey string,
+	deletedSnapshotID uint64,
+) error {
+	var tableID int64
+	err := tx.QueryRow(
+		ctx,
+		`SELECT table_id
+		   FROM tables
+		  WHERE table_name = $1 AND is_deleted = false`,
+		tableName,
+	).Scan(&tableID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		`UPDATE partitions
+		    SET is_deleted = true,
+		        deleted_snapshot_id = $1
+		  WHERE table_id = $2
+		    AND partition_key = $3
+		    AND is_deleted = false`,
+		int64(deletedSnapshotID), tableID, partitionKey,
+	)
+	return err
+}
+
+func (c *PGClient) UpdateTableSnapshotTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	tableName string,
+	snapshotID uint64,
+) error {
+	_, err := tx.Exec(
+		ctx,
+		`UPDATE tables
+		    SET current_snapshot_id = $1,
+		        updated_at = now()
+		  WHERE table_name = $2
+		    AND is_deleted = false`,
+		int64(snapshotID), tableName,
+	)
+	return err
 }

@@ -1783,7 +1783,7 @@ const file_metadata_service_proto_rawDesc = "" +
 	"\rListSnapshots\x12\x1e.metadata.ListSnapshotsRequest\x1a\x1f.metadata.ListSnapshotsResponse\x12O\n" +
 	"\x10BeginTransaction\x12\x1c.metadata.TransactionRequest\x1a\x1d.metadata.TransactionResponse\x12I\n" +
 	"\x11CommitTransaction\x12\x17.metadata.CommitRequest\x1a\x1b.metadata.OperationResponse\x12G\n" +
-	"\x10AbortTransaction\x12\x16.metadata.AbortRequest\x1a\x1b.metadata.OperationResponseB2Z0github.com/Athul0491/IceCore/gen/metadata;metadatab\x06proto3"
+	"\x10AbortTransaction\x12\x16.metadata.AbortRequest\x1a\x1b.metadata.OperationResponseB4Z2github.com/Athul0491/IceCore/gen/metadata;metadatab\x06proto3"
 
 var (
 	file_metadata_service_proto_rawDescOnce sync.Once

@@ -1,0 +1,8 @@
+{
+  "table_name": "events",
+  "schema_json": "{\"fields\":[{\"name\":\"event_id\",\"type\":\"long\"},{\"name\":\"ts\",\"type\":\"timestamp\"}]}",
+  "partition_spec": "month",
+  "properties": {
+    "owner": "data-eng"
+  }
+}
