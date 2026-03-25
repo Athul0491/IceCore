@@ -99,21 +99,19 @@ func (s *MetadataServer) GetTableMetadata(ctx context.Context, req *metadata.Tab
 		return nil, status.Error(codes.NotFound, "table not found: "+req.GetTableName())
 	}
 
-	// get current snapshot id
-	currentSnapshot := table.CurrentSnapshotID
+	currentSnapshot := uint64(table.CurrentSnapshotID)
 
-	// fetch partitions
 	parts, err := s.partitions.GetPartitions(ctx, req.GetTableName(), currentSnapshot)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	resp := &metadata.TableMetadataResponse{
-		TableName:      table.TableName,
-		SchemaJson:     table.SchemaJSON,
-		SchemaVersion:  table.SchemaVersion,
-		SnapshotId:     currentSnapshot,
-		Partitions:     make([]*metadata.PartitionInfo, 0),
+		TableName:         table.TableName,
+		SchemaJson:        table.SchemaJSON,
+		SchemaVersion:     table.SchemaVersion,
+		CurrentSnapshotId: currentSnapshot,
+		Partitions:        make([]*metadata.PartitionInfo, 0),
 	}
 
 	var totalRows int64
@@ -133,8 +131,8 @@ func (s *MetadataServer) GetTableMetadata(ctx context.Context, req *metadata.Tab
 		totalBytes += p.SizeBytes
 	}
 
-	resp.TotalRows = totalRows
-	resp.TotalBytes = totalBytes
+	resp.TotalRowCount = totalRows
+	resp.TotalSizeBytes = totalBytes
 
 	return resp, nil
 }
@@ -254,11 +252,46 @@ func (s *MetadataServer) CommitSnapshot(ctx context.Context, req *metadata.Snaps
 }
 
 func (s *MetadataServer) GetSnapshot(ctx context.Context, req *metadata.GetSnapshotRequest) (*metadata.SnapshotDetail, error) {
-	return nil, status.Error(codes.Unimplemented, "GetSnapshot not implemented yet")
+	snap, err := s.pgClient.GetSnapshot(ctx, req.GetTableName(), req.GetSnapshotId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if snap == nil {
+		return nil, status.Error(codes.NotFound, "snapshot not found")
+	}
+
+	return &metadata.SnapshotDetail{
+		SnapshotId:        uint64(snap.SnapshotID),
+		ParentSnapshotId:  uint64(snap.ParentSnapshotID),
+		Operation:         snap.Operation,
+		AddedPartitions:   int64(snap.AddedFilesCount),
+		DeletedPartitions: int64(snap.DeletedFilesCount),
+		CommittedAt:       snap.CommittedAt,
+	}, nil
 }
 
 func (s *MetadataServer) ListSnapshots(ctx context.Context, req *metadata.ListSnapshotsRequest) (*metadata.ListSnapshotsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "ListSnapshots not implemented yet")
+	snapshots, err := s.pgClient.ListSnapshots(ctx, req.GetTableName(), req.GetLimit())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	resp := &metadata.ListSnapshotsResponse{
+		Snapshots: make([]*metadata.SnapshotDetail, 0, len(snapshots)),
+	}
+
+	for _, snap := range snapshots {
+		resp.Snapshots = append(resp.Snapshots, &metadata.SnapshotDetail{
+			SnapshotId:        uint64(snap.SnapshotID),
+			ParentSnapshotId:  uint64(snap.ParentSnapshotID),
+			Operation:         snap.Operation,
+			AddedPartitions:   int64(snap.AddedFilesCount),
+			DeletedPartitions: int64(snap.DeletedFilesCount),
+			CommittedAt:       snap.CommittedAt,
+		})
+	}
+
+	return resp, nil
 }
 
 func (s *MetadataServer) BeginTransaction(ctx context.Context, req *metadata.TransactionRequest) (*metadata.TransactionResponse, error) {

@@ -620,3 +620,108 @@ func (c *PGClient) UpdateTableSnapshotTx(
 	)
 	return err
 }
+
+func (c *PGClient) GetSnapshot(
+	ctx context.Context,
+	tableName string,
+	snapshotID uint64,
+) (*SnapshotRow, error) {
+	tableID, err := c.GetTableID(ctx, tableName)
+	if err != nil {
+		return nil, err
+	}
+	if tableID < 0 {
+		return nil, nil
+	}
+
+	row := c.Pool.QueryRow(
+		ctx,
+		`SELECT snapshot_id,
+		        table_id,
+		        parent_snapshot_id,
+		        operation,
+		        added_files_count,
+		        deleted_files_count,
+		        committed_at::text
+		   FROM snapshots
+		  WHERE table_id = $1
+		    AND snapshot_id = $2`,
+		tableID, int64(snapshotID),
+	)
+
+	var s SnapshotRow
+	err = row.Scan(
+		&s.SnapshotID,
+		&s.TableID,
+		&s.ParentSnapshotID,
+		&s.Operation,
+		&s.AddedFilesCount,
+		&s.DeletedFilesCount,
+		&s.CommittedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &s, nil
+}
+
+func (c *PGClient) ListSnapshots(
+	ctx context.Context,
+	tableName string,
+	limit int32,
+) ([]SnapshotRow, error) {
+	tableID, err := c.GetTableID(ctx, tableName)
+	if err != nil {
+		return nil, err
+	}
+	if tableID < 0 {
+		return []SnapshotRow{}, nil
+	}
+
+	if limit <= 0 {
+		limit = 50
+	}
+
+	rows, err := c.Pool.Query(
+		ctx,
+		`SELECT snapshot_id,
+		        table_id,
+		        parent_snapshot_id,
+		        operation,
+		        added_files_count,
+		        deleted_files_count,
+		        committed_at::text
+		   FROM snapshots
+		  WHERE table_id = $1
+		  ORDER BY committed_at DESC
+		  LIMIT $2`,
+		tableID, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]SnapshotRow, 0)
+	for rows.Next() {
+		var s SnapshotRow
+		if err := rows.Scan(
+			&s.SnapshotID,
+			&s.TableID,
+			&s.ParentSnapshotID,
+			&s.Operation,
+			&s.AddedFilesCount,
+			&s.DeletedFilesCount,
+			&s.CommittedAt,
+		); err != nil {
+			return nil, err
+		}
+		result = append(result, s)
+	}
+
+	return result, rows.Err()
+}
