@@ -295,11 +295,47 @@ func (s *MetadataServer) ListSnapshots(ctx context.Context, req *metadata.ListSn
 }
 
 func (s *MetadataServer) BeginTransaction(ctx context.Context, req *metadata.TransactionRequest) (*metadata.TransactionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "BeginTransaction not implemented yet")
+	readSnapshot := uint64(0)
+
+	isolation := "snapshot"
+	if req.GetIsolation() == metadata.IsolationLevel_READ_COMMITTED {
+		isolation = "read_committed"
+	}
+
+	txnID, err := s.pgClient.InsertTransaction(
+		ctx,
+		req.GetClientId(),
+		readSnapshot,
+		isolation,
+	)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	s.mvcc.RegisterTransaction(txnID, readSnapshot)
+
+	return &metadata.TransactionResponse{
+		TxnId:          txnID,
+		ReadSnapshotId: readSnapshot,
+	}, nil
 }
 
 func (s *MetadataServer) CommitTransaction(ctx context.Context, req *metadata.CommitRequest) (*metadata.OperationResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "CommitTransaction not implemented yet")
+	ok := s.mvcc.CommitTransaction(req.GetTxnId())
+	if !ok {
+		return &metadata.OperationResponse{
+			Success:  false,
+			ErrorMsg: "transaction not found or expired",
+		}, nil
+	}
+
+	if err := s.pgClient.UpdateTransactionStatus(ctx, req.GetTxnId(), "committed"); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &metadata.OperationResponse{
+		Success: true,
+	}, nil
 }
 
 func (s *MetadataServer) AbortTransaction(ctx context.Context, req *metadata.AbortRequest) (*metadata.OperationResponse, error) {

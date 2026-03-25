@@ -1,0 +1,4 @@
+{
+  "client_id": "spark-driver-1",
+  "isolation": "SNAPSHOT"
+}

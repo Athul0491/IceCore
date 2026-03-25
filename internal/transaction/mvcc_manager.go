@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -13,8 +12,6 @@ type TransactionState struct {
 }
 
 type MVCCManager struct {
-	nextTxnID atomic.Uint64
-
 	mu                 sync.RWMutex
 	activeTransactions map[uint64]TransactionState
 	pinnedSnapshots    map[uint64]int
@@ -23,30 +20,23 @@ type MVCCManager struct {
 }
 
 func NewMVCCManager(timeout time.Duration) *MVCCManager {
-	m := &MVCCManager{
+	return &MVCCManager{
 		activeTransactions: make(map[uint64]TransactionState),
 		pinnedSnapshots:    make(map[uint64]int),
 		txnTimeout:         timeout,
 	}
-	m.nextTxnID.Store(1)
-	return m
 }
 
-func (m *MVCCManager) BeginTransaction(readSnapshot uint64) (txnID uint64, snapshot uint64) {
-	txnID = m.nextTxnID.Add(1) - 1
-	snapshot = readSnapshot
-
+func (m *MVCCManager) RegisterTransaction(txnID, readSnapshot uint64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	m.activeTransactions[txnID] = TransactionState{
 		TxnID:          txnID,
-		ReadSnapshotID: snapshot,
+		ReadSnapshotID: readSnapshot,
 		StartedAt:      time.Now(),
 	}
-	m.pinnedSnapshots[snapshot]++
-
-	return txnID, snapshot
+	m.pinnedSnapshots[readSnapshot]++
 }
 
 func (m *MVCCManager) CommitTransaction(txnID uint64) bool {
