@@ -91,33 +91,61 @@ func (s *MetadataServer) CreateTable(ctx context.Context, req *metadata.CreateTa
 }
 
 func (s *MetadataServer) GetTableMetadata(ctx context.Context, req *metadata.TableRequest) (*metadata.TableMetadataResponse, error) {
-	table, err := s.catalog.GetTable(ctx, req.GetTableName())
+	tableName := req.GetTableName()
+	if tableName == "" {
+		return nil, status.Error(codes.InvalidArgument, "table_name is required")
+	}
+
+	table, err := s.catalog.GetTable(ctx, tableName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if table == nil {
-		return nil, status.Error(codes.NotFound, "table not found: "+req.GetTableName())
+		return nil, status.Error(codes.NotFound, "table not found: "+tableName)
 	}
 
-	currentSnapshot := uint64(table.CurrentSnapshotID)
+	readSnapshot := req.GetSnapshotId()
+	if readSnapshot == 0 {
+		if table.CurrentSnapshotID < 0 {
+			readSnapshot = 0
+		} else {
+			readSnapshot = uint64(table.CurrentSnapshotID)
+		}
+	}
 
-	parts, err := s.partitions.GetPartitions(ctx, req.GetTableName(), currentSnapshot)
+	parts, err := s.partitions.GetPartitions(ctx, tableName, readSnapshot)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if parts == nil {
+		parts = []db.PartitionRow{}
+	}
+
+	properties := map[string]string{}
+	if table.PropertiesJSON != "" {
+		if err := json.Unmarshal([]byte(table.PropertiesJSON), &properties); err != nil {
+			return nil, status.Error(codes.Internal, "failed to parse table properties JSON")
+		}
 	}
 
 	resp := &metadata.TableMetadataResponse{
 		TableName:         table.TableName,
 		SchemaJson:        table.SchemaJSON,
+		CurrentSnapshotId: readSnapshot,
 		SchemaVersion:     table.SchemaVersion,
-		CurrentSnapshotId: currentSnapshot,
-		Partitions:        make([]*metadata.PartitionInfo, 0),
+		Partitions:        make([]*metadata.PartitionInfo, 0, len(parts)),
+		Properties:        properties,
 	}
 
 	var totalRows int64
 	var totalBytes int64
 
 	for _, p := range parts {
+		columnStats := map[string]string{}
+		if p.ColumnStatsJSON != "" && p.ColumnStatsJSON != "null" {
+			_ = json.Unmarshal([]byte(p.ColumnStatsJSON), &columnStats)
+		}
+
 		resp.Partitions = append(resp.Partitions, &metadata.PartitionInfo{
 			PartitionKey: p.PartitionKey,
 			DataFilePath: p.DataFilePath,
@@ -125,6 +153,7 @@ func (s *MetadataServer) GetTableMetadata(ctx context.Context, req *metadata.Tab
 			SizeBytes:    p.SizeBytes,
 			SnapshotId:   uint64(p.SnapshotID),
 			FileFormat:   p.FileFormat,
+			ColumnStats:  columnStats,
 		})
 
 		totalRows += p.RowCount
