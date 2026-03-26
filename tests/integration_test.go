@@ -10,7 +10,9 @@ import (
 	"github.com/Athul0491/IceCore/internal/server"
 	"github.com/Athul0491/IceCore/internal/testutil"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 )
 
@@ -310,5 +312,194 @@ func TestAbortTransaction(t *testing.T) {
 	}
 	if !abortResp.GetSuccess() {
 		t.Fatalf("AbortTransaction unsuccessful: %s", abortResp.GetErrorMsg())
+	}
+}
+
+func TestCreateTableDuplicateFails(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req := &metadata.CreateTableRequest{
+		TableName:     "events",
+		SchemaJson:    `{"fields":[{"name":"event_id","type":"long"}]}`,
+		PartitionSpec: "month",
+	}
+
+	firstResp, err := client.CreateTable(ctx, req)
+	if err != nil {
+		t.Fatalf("first CreateTable failed: %v", err)
+	}
+	if !firstResp.GetSuccess() {
+		t.Fatalf("first CreateTable unsuccessful: %s", firstResp.GetErrorMsg())
+	}
+
+	secondResp, err := client.CreateTable(ctx, req)
+	if err != nil {
+		t.Fatalf("second CreateTable failed: %v", err)
+	}
+	if secondResp.GetSuccess() {
+		t.Fatalf("expected duplicate CreateTable to fail")
+	}
+	if secondResp.GetErrorMsg() == "" {
+		t.Fatalf("expected duplicate CreateTable to return an error message")
+	}
+}
+
+func TestGetTableMetadataMissingTable(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := client.GetTableMetadata(ctx, &metadata.TableRequest{
+		TableName: "does_not_exist",
+	})
+	if err == nil {
+		t.Fatalf("expected GetTableMetadata to fail for missing table")
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected grpc status error, got: %v", err)
+	}
+	if st.Code() != codes.NotFound {
+		t.Fatalf("expected NotFound, got %v", st.Code())
+	}
+}
+
+func TestGetPartitionsMissingTable(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := client.GetPartitions(ctx, &metadata.PartitionRequest{
+		TableName: "does_not_exist",
+	})
+	if err == nil {
+		t.Fatalf("expected GetPartitions to fail for missing table")
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected grpc status error, got: %v", err)
+	}
+	if st.Code() != codes.NotFound {
+		t.Fatalf("expected NotFound, got %v", st.Code())
+	}
+}
+
+func TestCommitSnapshotBadParentFails(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := client.CreateTable(ctx, &metadata.CreateTableRequest{
+		TableName:     "events",
+		SchemaJson:    `{"fields":[{"name":"event_id","type":"long"}]}`,
+		PartitionSpec: "month",
+	})
+	if err != nil {
+		t.Fatalf("CreateTable failed: %v", err)
+	}
+
+	// first valid snapshot
+	firstCommit, err := client.CommitSnapshot(ctx, &metadata.SnapshotRequest{
+		TableName:        "events",
+		ParentSnapshotId: 0,
+		Operation:        "append",
+		NewPartitions: []*metadata.PartitionInfo{
+			{
+				PartitionKey: "month=2025-01",
+				DataFilePath: "s3://bucket/events/month=2025-01/part-0.parquet",
+				RowCount:     100000,
+				SizeBytes:    15000000,
+				FileFormat:   "parquet",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("first CommitSnapshot failed: %v", err)
+	}
+	if !firstCommit.GetSuccess() {
+		t.Fatalf("first CommitSnapshot unsuccessful: %s", firstCommit.GetErrorMsg())
+	}
+
+	// stale parent id should fail now that current snapshot is 1
+	secondCommit, err := client.CommitSnapshot(ctx, &metadata.SnapshotRequest{
+		TableName:        "events",
+		ParentSnapshotId: 0,
+		Operation:        "append",
+		NewPartitions: []*metadata.PartitionInfo{
+			{
+				PartitionKey: "month=2025-02",
+				DataFilePath: "s3://bucket/events/month=2025-02/part-0.parquet",
+				RowCount:     200000,
+				SizeBytes:    25000000,
+				FileFormat:   "parquet",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("second CommitSnapshot RPC failed unexpectedly: %v", err)
+	}
+	if secondCommit.GetSuccess() {
+		t.Fatalf("expected stale-parent CommitSnapshot to fail")
+	}
+	if secondCommit.GetErrorMsg() == "" {
+		t.Fatalf("expected stale-parent CommitSnapshot to return an error message")
+	}
+}
+
+func TestBeginTransactionMissingTable(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := client.BeginTransaction(ctx, &metadata.TransactionRequest{
+		ClientId:  "spark-driver-1",
+		TableName: "does_not_exist",
+		Isolation: metadata.IsolationLevel_SNAPSHOT,
+	})
+	if err == nil {
+		t.Fatalf("expected BeginTransaction to fail for missing table")
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected grpc status error, got: %v", err)
+	}
+	if st.Code() != codes.NotFound {
+		t.Fatalf("expected NotFound, got %v", st.Code())
+	}
+}
+
+func TestCommitTransactionUnknownTxnFails(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := client.CommitTransaction(ctx, &metadata.CommitRequest{
+		TxnId: 999999,
+	})
+	if err != nil {
+		t.Fatalf("CommitTransaction RPC failed unexpectedly: %v", err)
+	}
+	if resp.GetSuccess() {
+		t.Fatalf("expected CommitTransaction on unknown txn to fail")
+	}
+	if resp.GetErrorMsg() == "" {
+		t.Fatalf("expected error message for unknown txn")
 	}
 }
