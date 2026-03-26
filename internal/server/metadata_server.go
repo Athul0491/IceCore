@@ -529,3 +529,10 @@ func (s *MetadataServer) AbortTransaction(ctx context.Context, req *metadata.Abo
 		Success: true,
 	}, nil
 }
+
+func (s *MetadataServer) CleanupExpiredTransactions() int {
+	if s.mvcc == nil {
+		return 0
+	}
+	return s.mvcc.CleanupExpiredTransactions()
+}

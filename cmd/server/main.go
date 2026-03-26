@@ -1,14 +1,14 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"github.com/Athul0491/IceCore/gen/metadata"
+	metadata "github.com/Athul0491/IceCore/gen/metadata"
 	"github.com/Athul0491/IceCore/internal/config"
 	"github.com/Athul0491/IceCore/internal/server"
 	"google.golang.org/grpc"
@@ -45,19 +45,39 @@ func main() {
 		errCh <- grpcServer.Serve(lis)
 	}()
 
+	// background cleanup loop for expired transactions
+	stopCleanup := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				cleaned := svc.CleanupExpiredTransactions()
+				if cleaned > 0 {
+					log.Printf("[cleanup] garbage-collected %d expired transactions\n", cleaned)
+				}
+			case <-stopCleanup:
+				return
+			}
+		}
+	}()
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	select {
 	case sig := <-stop:
 		log.Printf("[main] received signal %s, shutting down...\n", sig)
+		close(stopCleanup)
 		grpcServer.GracefulStop()
 	case err := <-errCh:
+		close(stopCleanup)
 		if err != nil {
 			log.Fatalf("gRPC server stopped with error: %v", err)
 		}
 	}
 
-	_ = context.Background()
 	log.Println("[main] server stopped")
 }
