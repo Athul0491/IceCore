@@ -75,3 +75,4 @@ temp/
 # Misc
 # =========================
 coverage.out
+/grpcurl
