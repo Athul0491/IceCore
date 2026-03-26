@@ -79,6 +79,139 @@ Common runtime values shown on startup include:
 - cache capacity
 - transaction timeout
 
+## How It Works
+
+IceLog does not store table data itself. Instead, it stores metadata about tables, partitions, immutable snapshots, and transaction state, then serves that metadata over gRPC to clients such as query engines, ETL jobs, or admin tooling.
+
+### Typical Read Flow
+
+A typical read flow looks like this:
+
+1. A client requests metadata for a table or asks for visible partitions.
+2. IceLog resolves the requested snapshot, or falls back to the table's current snapshot.
+3. The service checks the in-memory LRU cache for partition metadata.
+4. On a cache miss, it loads the visible partitions from PostgreSQL.
+5. IceLog returns the exact file paths and metadata needed to read the table at that point in time.
+
+### Typical Write Flow
+
+A typical write flow looks like this:
+
+1. A client commits a new snapshot with added and/or deleted partitions.
+2. IceLog validates that the parent snapshot still matches the table's current snapshot.
+3. The service writes a new immutable snapshot record and associated partition changes.
+4. The table's current snapshot pointer is updated transactionally.
+5. Cached partition metadata for that table is invalidated.
+
+### Benefits
+
+This architecture gives the system:
+
+- immutable snapshot history
+- point-in-time table views
+- optimistic concurrency on snapshot commits
+- fast repeated partition lookups via caching
+
+### Architecture
+
+IceLog is organized into a few core layers:
+
+#### gRPC API layer
+`internal/server/`
+
+The gRPC server exposes the MetadataService defined in `proto/metadata_service.proto`. It handles request validation, response shaping, and delegation to the catalog, partition, snapshot, and transaction layers.
+
+#### Catalog and schema management
+`internal/catalog/`
+
+This layer owns:
+
+- table creation, rename, deletion, and listing
+- schema retrieval and schema evolution
+- partition metadata lookup
+- snapshot commit orchestration
+
+#### Transaction and MVCC tracking
+`internal/transaction/`
+
+This layer tracks:
+
+- active transactions
+- pinned read snapshots
+- transaction expiration and cleanup
+- parent snapshot validation during snapshot commits
+
+#### Persistence layer
+`internal/db/`
+
+PostgreSQL is the durable metadata store for:
+
+- tables
+- schema history
+- snapshots
+- partitions
+- transaction rows
+
+#### Cache and locking
+`internal/cache/`, `internal/lock/`
+
+IceLog uses:
+
+- an in-memory LRU cache for hot partition metadata
+- per-table read/write locks for concurrency control
+- cache invalidation on metadata mutation
+
+### Request Flow
+
+#### Read path
+
+For `GetTableMetadata` or `GetPartitions`:
+
+1. Acquire a shared lock for the table.
+2. Resolve the requested snapshot or current snapshot.
+3. Check the in-memory cache for table:snapshot.
+4. On cache miss, query PostgreSQL for visible partitions.
+5. Return partition metadata and aggregate stats.
+
+#### Write path
+
+For `CommitSnapshot`:
+
+1. Acquire an exclusive lock for the table.
+2. Read the current table snapshot.
+3. Validate the provided parent snapshot.
+4. Insert a new snapshot row.
+5. Insert new partitions and/or mark deleted ones.
+6. Update the table's current snapshot pointer.
+7. Invalidate cache entries for that table.
+
+### Concurrency Model
+
+IceLog uses per-table locking plus optimistic snapshot validation.
+
+- Reads take a shared lock and can proceed concurrently.
+- Metadata mutations take an exclusive lock per table.
+- Snapshot commits succeed only if the provided parent snapshot is still current.
+
+This avoids conflicting table mutations while still allowing concurrent reads.
+
+### Storage Model
+
+The PostgreSQL schema stores:
+
+- `tables`: table definitions, schema, properties, current snapshot pointer
+- `schema_history`: historical schema versions
+- `snapshots`: immutable snapshot records
+- `partitions`: partition/file metadata with visibility over snapshots
+- `transactions`: transaction lifecycle and read snapshot tracking
+
+### Current Limitations
+
+- `AlterTable` does not yet support partition spec evolution.
+- Transaction lifecycle is table-aware at begin time, but transaction semantics are still lightweight compared to a full distributed transaction protocol.
+- `ListTables` uses per-table count queries for visible partitions, which is correct but not yet batch-optimized.
+- Integration tests currently cover the main happy paths, but not every error case.
+
 ## API Discovery With Reflection
 List available services:
 ```bash
