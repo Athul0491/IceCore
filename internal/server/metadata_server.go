@@ -49,12 +49,12 @@ func New(cfg config.Config) (*MetadataServer, error) {
 	schemaStore := catalog.NewSchemaStore(pgClient, locks)
 
 	return &MetadataServer{
-		pgClient:    pgClient,
-		locks:       locks,
-		mvcc:        mvcc,
-		catalog:     catalogMgr,
-		partitions:  partitionRegistry,
-		schemas:     schemaStore,
+		pgClient:   pgClient,
+		locks:      locks,
+		mvcc:       mvcc,
+		catalog:    catalogMgr,
+		partitions: partitionRegistry,
+		schemas:    schemaStore,
 	}, nil
 }
 
@@ -167,15 +167,126 @@ func (s *MetadataServer) GetTableMetadata(ctx context.Context, req *metadata.Tab
 }
 
 func (s *MetadataServer) AlterTable(ctx context.Context, req *metadata.AlterTableRequest) (*metadata.OperationResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "AlterTable not implemented yet")
+	tableName := req.GetTableName()
+	if tableName == "" {
+		return nil, status.Error(codes.InvalidArgument, "table_name is required")
+	}
+
+	switch alt := req.Alteration.(type) {
+	case *metadata.AlterTableRequest_NewSchemaJson:
+		current, err := s.schemas.GetCurrentSchema(ctx, tableName)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if current != nil {
+			if msg := s.schemas.ValidateSchemaChange(current.SchemaJSON, alt.NewSchemaJson); msg != "" {
+				return &metadata.OperationResponse{
+					Success:  false,
+					ErrorMsg: msg,
+				}, nil
+			}
+		}
+
+		result := s.catalog.AlterTableSchema(
+			ctx,
+			tableName,
+			alt.NewSchemaJson,
+			"schema evolution via AlterTable",
+		)
+
+		s.partitions.InvalidateTableCache(tableName)
+
+		return &metadata.OperationResponse{
+			Success:  result.Success,
+			ErrorMsg: result.ErrorMsg,
+		}, nil
+
+	case *metadata.AlterTableRequest_Rename:
+		newName := ""
+		if alt.Rename != nil {
+			newName = alt.Rename.GetNewName()
+		}
+		if newName == "" {
+			return nil, status.Error(codes.InvalidArgument, "new table name is required")
+		}
+
+		result := s.catalog.RenameTable(ctx, tableName, newName)
+
+		s.partitions.InvalidateTableCache(tableName)
+		s.partitions.InvalidateTableCache(newName)
+
+		return &metadata.OperationResponse{
+			Success:  result.Success,
+			ErrorMsg: result.ErrorMsg,
+		}, nil
+
+	case *metadata.AlterTableRequest_NewPartitionSpec:
+		// still intentionally not implemented in your current design
+		return &metadata.OperationResponse{
+			Success:  false,
+			ErrorMsg: "partition spec update not yet implemented",
+		}, nil
+
+	default:
+		return &metadata.OperationResponse{
+			Success:  false,
+			ErrorMsg: "no alteration specified",
+		}, nil
+	}
 }
 
 func (s *MetadataServer) DropTable(ctx context.Context, req *metadata.DropTableRequest) (*metadata.OperationResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "DropTable not implemented yet")
+	tableName := req.GetTableName()
+	if tableName == "" {
+		return nil, status.Error(codes.InvalidArgument, "table_name is required")
+	}
+
+	result := s.catalog.DropTable(ctx, tableName, req.GetPurge())
+	if result.Success {
+		s.partitions.InvalidateTableCache(tableName)
+	}
+
+	return &metadata.OperationResponse{
+		Success:  result.Success,
+		ErrorMsg: result.ErrorMsg,
+	}, nil
 }
 
 func (s *MetadataServer) ListTables(ctx context.Context, req *metadata.ListTablesRequest) (*metadata.ListTablesResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "ListTables not implemented yet")
+	rows, err := s.catalog.ListTables(
+		ctx,
+		req.GetNamespace(),
+		req.GetPageSize(),
+		req.GetPageToken(),
+	)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	resp := &metadata.ListTablesResponse{
+		Tables: make([]*metadata.TableSummary, 0, len(rows)),
+	}
+
+	for _, t := range rows {
+		resp.Tables = append(resp.Tables, &metadata.TableSummary{
+			TableName:         t.TableName,
+			CurrentSnapshotId: uint64(t.CurrentSnapshotID),
+			TotalPartitions:   0, // can be enriched later with a COUNT query if you want
+		})
+	}
+
+	// offset-style pagination: next token = current offset + returned rows
+	if req.GetPageSize() > 0 && len(rows) == int(req.GetPageSize()) {
+		currentOffset := int64(0)
+		if req.GetPageToken() != "" {
+			if parsed, parseErr := strconv.ParseInt(req.GetPageToken(), 10, 64); parseErr == nil {
+				currentOffset = parsed
+			}
+		}
+		resp.NextPageToken = strconv.FormatInt(currentOffset+int64(len(rows)), 10)
+	}
+
+	return resp, nil
 }
 
 func (s *MetadataServer) GetPartitions(ctx context.Context, req *metadata.PartitionRequest) (*metadata.PartitionListResponse, error) {
@@ -238,15 +349,20 @@ func (s *MetadataServer) GetPartitions(ctx context.Context, req *metadata.Partit
 }
 
 func (s *MetadataServer) GetPartitionStats(ctx context.Context, req *metadata.PartitionStatsRequest) (*metadata.PartitionStatsResponse, error) {
-	stats, err := s.partitions.GetStats(ctx, req.GetTableName())
+	tableName := req.GetTableName()
+	if tableName == "" {
+		return nil, status.Error(codes.InvalidArgument, "table_name is required")
+	}
+
+	stats, err := s.partitions.GetStats(ctx, tableName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &metadata.PartitionStatsResponse{
-		TotalPartitions:      stats.TotalPartitions,
-		TotalRows:            stats.TotalRows,
-		TotalBytes:           stats.TotalBytes,
+		TotalPartitions:       stats.TotalPartitions,
+		TotalRows:             stats.TotalRows,
+		TotalBytes:            stats.TotalBytes,
 		AvgPartitionSizeBytes: stats.AvgSizeBytes,
 	}, nil
 }
@@ -274,9 +390,9 @@ func (s *MetadataServer) CommitSnapshot(ctx context.Context, req *metadata.Snaps
 	)
 
 	return &metadata.SnapshotResponse{
-		Success:   result.Success,
+		Success:    result.Success,
 		SnapshotId: result.SnapshotID,
-		ErrorMsg:  result.ErrorMsg,
+		ErrorMsg:   result.ErrorMsg,
 	}, nil
 }
 
@@ -368,5 +484,13 @@ func (s *MetadataServer) CommitTransaction(ctx context.Context, req *metadata.Co
 }
 
 func (s *MetadataServer) AbortTransaction(ctx context.Context, req *metadata.AbortRequest) (*metadata.OperationResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "AbortTransaction not implemented yet")
+	s.mvcc.AbortTransaction(req.GetTxnId())
+
+	if err := s.pgClient.UpdateTransactionStatus(ctx, req.GetTxnId(), "aborted"); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &metadata.OperationResponse{
+		Success: true,
+	}, nil
 }
