@@ -1,4 +1,5 @@
 {
   "client_id": "spark-driver-1",
+  "table_name": "events",
   "isolation": "SNAPSHOT"
 }

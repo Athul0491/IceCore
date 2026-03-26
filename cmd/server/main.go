@@ -38,7 +38,7 @@ func main() {
 	grpcServer := grpc.NewServer()
 	metadata.RegisterMetadataServiceServer(grpcServer, svc)
 	reflection.Register(grpcServer)
-	
+
 	errCh := make(chan error, 1)
 	go func() {
 		log.Printf("[main] server listening on %s\n", cfg.GRPCAddress)

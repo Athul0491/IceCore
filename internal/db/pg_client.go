@@ -306,15 +306,16 @@ func (c *PGClient) GetCurrentSnapshot(ctx context.Context, tableName string) (ui
 func (c *PGClient) InsertTransaction(
 	ctx context.Context,
 	clientID string,
+	tableID int64,
 	readSnapshotID uint64,
 	isolation string,
 ) (uint64, error) {
 	row := c.Pool.QueryRow(
 		ctx,
-		`INSERT INTO transactions (client_id, read_snapshot_id, isolation_level)
-		 VALUES ($1, $2, $3)
+		`INSERT INTO transactions (client_id, table_id, read_snapshot_id, isolation_level)
+		 VALUES ($1, $2, $3, $4)
 		 RETURNING txn_id`,
-		clientID, int64(readSnapshotID), isolation,
+		clientID, tableID, int64(readSnapshotID), isolation,
 	)
 
 	var txnID int64

@@ -1372,7 +1372,8 @@ func (x *ListSnapshotsResponse) GetSnapshots() []*SnapshotDetail {
 type TransactionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ClientId      string                 `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	Isolation     IsolationLevel         `protobuf:"varint,2,opt,name=isolation,proto3,enum=metadata.IsolationLevel" json:"isolation,omitempty"`
+	TableName     string                 `protobuf:"bytes,2,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
+	Isolation     IsolationLevel         `protobuf:"varint,3,opt,name=isolation,proto3,enum=metadata.IsolationLevel" json:"isolation,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1410,6 +1411,13 @@ func (*TransactionRequest) Descriptor() ([]byte, []int) {
 func (x *TransactionRequest) GetClientId() string {
 	if x != nil {
 		return x.ClientId
+	}
+	return ""
+}
+
+func (x *TransactionRequest) GetTableName() string {
+	if x != nil {
+		return x.TableName
 	}
 	return ""
 }
@@ -1751,10 +1759,12 @@ const file_metadata_service_proto_rawDesc = "" +
 	"table_name\x18\x01 \x01(\tR\ttableName\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\"O\n" +
 	"\x15ListSnapshotsResponse\x126\n" +
-	"\tsnapshots\x18\x01 \x03(\v2\x18.metadata.SnapshotDetailR\tsnapshots\"i\n" +
+	"\tsnapshots\x18\x01 \x03(\v2\x18.metadata.SnapshotDetailR\tsnapshots\"\x88\x01\n" +
 	"\x12TransactionRequest\x12\x1b\n" +
-	"\tclient_id\x18\x01 \x01(\tR\bclientId\x126\n" +
-	"\tisolation\x18\x02 \x01(\x0e2\x18.metadata.IsolationLevelR\tisolation\"V\n" +
+	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12\x1d\n" +
+	"\n" +
+	"table_name\x18\x02 \x01(\tR\ttableName\x126\n" +
+	"\tisolation\x18\x03 \x01(\x0e2\x18.metadata.IsolationLevelR\tisolation\"V\n" +
 	"\x13TransactionResponse\x12\x15\n" +
 	"\x06txn_id\x18\x01 \x01(\x04R\x05txnId\x12(\n" +
 	"\x10read_snapshot_id\x18\x02 \x01(\x04R\x0ereadSnapshotId\"&\n" +

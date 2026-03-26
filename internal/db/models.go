@@ -23,18 +23,19 @@ type TableRow struct {
 }
 
 type SnapshotRow struct {
-	SnapshotID         int64
-	TableID            int64
-	ParentSnapshotID   int64
-	Operation          string
-	AddedFilesCount    int32
-	DeletedFilesCount  int32
-	CommittedAt        string
+	SnapshotID        int64
+	TableID           int64
+	ParentSnapshotID  int64
+	Operation         string
+	AddedFilesCount   int32
+	DeletedFilesCount int32
+	CommittedAt       string
 }
 
 type TransactionRow struct {
 	TxnID          int64
 	ClientID       string
+	TableID        *int64
 	ReadSnapshotID int64
 	Status         string
 	IsolationLevel string

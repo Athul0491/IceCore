@@ -158,7 +158,8 @@ message ListSnapshotsResponse {
 
 message TransactionRequest {
     string client_id = 1;
-    IsolationLevel isolation = 2;
+    string table_name = 2;
+    IsolationLevel isolation = 3;
 }
 
 enum IsolationLevel {

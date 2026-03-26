@@ -440,7 +440,28 @@ func (s *MetadataServer) ListSnapshots(ctx context.Context, req *metadata.ListSn
 }
 
 func (s *MetadataServer) BeginTransaction(ctx context.Context, req *metadata.TransactionRequest) (*metadata.TransactionResponse, error) {
+	clientID := req.GetClientId()
+	tableName := req.GetTableName()
+
+	if clientID == "" {
+		return nil, status.Error(codes.InvalidArgument, "client_id is required")
+	}
+	if tableName == "" {
+		return nil, status.Error(codes.InvalidArgument, "table_name is required")
+	}
+
+	table, err := s.catalog.GetTable(ctx, tableName)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if table == nil {
+		return nil, status.Error(codes.NotFound, "table not found: "+tableName)
+	}
+
 	readSnapshot := uint64(0)
+	if table.CurrentSnapshotID > 0 {
+		readSnapshot = uint64(table.CurrentSnapshotID)
+	}
 
 	isolation := "snapshot"
 	if req.GetIsolation() == metadata.IsolationLevel_READ_COMMITTED {
@@ -449,7 +470,8 @@ func (s *MetadataServer) BeginTransaction(ctx context.Context, req *metadata.Tra
 
 	txnID, err := s.pgClient.InsertTransaction(
 		ctx,
-		req.GetClientId(),
+		clientID,
+		table.TableID,
 		readSnapshot,
 		isolation,
 	)

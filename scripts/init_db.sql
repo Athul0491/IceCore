@@ -59,6 +59,7 @@ CREATE INDEX idx_partitions_table_key
 CREATE TABLE IF NOT EXISTS transactions (
     txn_id            BIGSERIAL PRIMARY KEY,
     client_id         TEXT NOT NULL,
+    table_id          BIGINT REFERENCES tables(table_id),
     read_snapshot_id  BIGINT,
     status            TEXT DEFAULT 'active',
     isolation_level   TEXT DEFAULT 'snapshot',
