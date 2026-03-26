@@ -52,6 +52,21 @@ Server default gRPC endpoint:
 127.0.0.1:50051
 ```
 
+### 2. Running Integration Tests
+Start PostgreSQL first:
+
+```bash
+docker compose up -d postgres
+```
+followed by
+```bash
+$env:PG_CONN_STRING="host=127.0.0.1 port=5432 dbname=metadata user=metadata_user password=metadata_pass"
+go test ./... -v
+```
+Alternative using Makefile:
+```bash
+make test
+```
 ## Configuration
 Runtime configuration is loaded from environment variables in `internal/config/config.go`.
 
