@@ -726,3 +726,34 @@ func (c *PGClient) ListSnapshots(
 
 	return result, rows.Err()
 }
+
+func (c *PGClient) GetVisiblePartitionCount(
+	ctx context.Context,
+	tableName string,
+	snapshotID uint64,
+) (int64, error) {
+	tableID, err := c.GetTableID(ctx, tableName)
+	if err != nil {
+		return 0, err
+	}
+	if tableID < 0 {
+		return 0, nil
+	}
+
+	row := c.Pool.QueryRow(
+		ctx,
+		`SELECT COUNT(*)
+		   FROM partitions
+		  WHERE table_id = $1
+		    AND snapshot_id <= $2
+		    AND (is_deleted = false OR deleted_snapshot_id > $2)`,
+		tableID, int64(snapshotID),
+	)
+
+	var count int64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}

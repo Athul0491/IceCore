@@ -268,14 +268,27 @@ func (s *MetadataServer) ListTables(ctx context.Context, req *metadata.ListTable
 	}
 
 	for _, t := range rows {
+		currentSnapshotID := uint64(0)
+		if t.CurrentSnapshotID > 0 {
+			currentSnapshotID = uint64(t.CurrentSnapshotID)
+		}
+
+		totalPartitions := int64(0)
+		if currentSnapshotID > 0 {
+			count, countErr := s.pgClient.GetVisiblePartitionCount(ctx, t.TableName, currentSnapshotID)
+			if countErr != nil {
+				return nil, status.Error(codes.Internal, countErr.Error())
+			}
+			totalPartitions = count
+		}
+
 		resp.Tables = append(resp.Tables, &metadata.TableSummary{
 			TableName:         t.TableName,
-			CurrentSnapshotId: uint64(t.CurrentSnapshotID),
-			TotalPartitions:   0, // can be enriched later with a COUNT query if you want
+			CurrentSnapshotId: currentSnapshotID,
+			TotalPartitions:   totalPartitions,
 		})
 	}
 
-	// offset-style pagination: next token = current offset + returned rows
 	if req.GetPageSize() > 0 && len(rows) == int(req.GetPageSize()) {
 		currentOffset := int64(0)
 		if req.GetPageToken() != "" {
