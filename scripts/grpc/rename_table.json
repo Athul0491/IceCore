@@ -1,0 +1,6 @@
+{
+  "table_name": "events",
+  "rename": {
+    "new_name": "events_v2"
+  }
+}

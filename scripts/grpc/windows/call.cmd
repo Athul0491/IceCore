@@ -1,0 +1,2 @@
+cmd /c "grpcurl -plaintext -import-path proto -proto metadata_service.proto -d @ 127.0.0.1:50051 metadata.MetadataService/CreateTable < scripts\grpc\create_table.json"
+@REM change the Metadata service type and json file as per your request

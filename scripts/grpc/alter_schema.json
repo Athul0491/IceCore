@@ -1,0 +1,4 @@
+{
+  "table_name": "events",
+  "new_schema_json": "{\"fields\":[{\"name\":\"event_id\",\"type\":\"long\"},{\"name\":\"ts\",\"type\":\"timestamp\"},{\"name\":\"user_id\",\"type\":\"long\"}]}"
+}
