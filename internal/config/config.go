@@ -13,6 +13,7 @@ type Config struct {
 	CacheCapacity int
 	PoolSize      int
 	TxnTimeout    time.Duration
+	DisableCache  bool
 }
 
 func FromEnv() Config {
@@ -22,8 +23,12 @@ func FromEnv() Config {
 		CacheCapacity: 10000,
 		PoolSize:      20,
 		TxnTimeout:    300 * time.Second,
+		DisableCache:  false,
 	}
 
+	if v := os.Getenv("DISABLE_CACHE"); v != "" {
+		cfg.DisableCache = v == "true" || v == "1" || v == "TRUE"
+	}
 	if v := os.Getenv("PG_CONN_STRING"); v != "" {
 		cfg.PGConnString = v
 	}

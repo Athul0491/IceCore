@@ -25,10 +25,11 @@ type CommitResult struct {
 }
 
 type PartitionRegistry struct {
-	pg    *db.PGClient
-	locks *lock.Manager
-	mvcc  *transaction.MVCCManager
-	cache *cache.LRU[string, []db.PartitionRow]
+	pg           *db.PGClient
+	locks        *lock.Manager
+	mvcc         *transaction.MVCCManager
+	cache        *cache.LRU[string, []db.PartitionRow]
+	disableCache bool
 }
 
 func NewPartitionRegistry(
@@ -36,12 +37,14 @@ func NewPartitionRegistry(
 	locks *lock.Manager,
 	mvcc *transaction.MVCCManager,
 	cacheCapacity int,
+	disableCache bool,
 ) *PartitionRegistry {
 	return &PartitionRegistry{
-		pg:    pg,
-		locks: locks,
-		mvcc:  mvcc,
-		cache: cache.NewLRU[string, []db.PartitionRow](cacheCapacity),
+		pg:           pg,
+		locks:        locks,
+		mvcc:         mvcc,
+		cache:        cache.NewLRU[string, []db.PartitionRow](cacheCapacity),
+		disableCache: disableCache,
 	}
 }
 
@@ -59,10 +62,11 @@ func (r *PartitionRegistry) GetPartitions(
 	}
 
 	key := r.makeCacheKey(tableName, readSnap)
-	if cached, ok := r.cache.Get(key); ok {
-		return cached, nil
+	if !r.disableCache {
+		if cached, ok := r.cache.Get(key); ok {
+			return cached, nil
+		}
 	}
-
 	rows, err := r.pg.QueryPartitions(ctx, tableName, readSnap)
 	if err != nil {
 		return nil, err
@@ -70,8 +74,9 @@ func (r *PartitionRegistry) GetPartitions(
 	if rows == nil {
 		return nil, nil
 	}
-
-	r.cache.Put(key, rows)
+	if !r.disableCache {
+		r.cache.Put(key, rows)
+	}
 	return rows, nil
 }
 

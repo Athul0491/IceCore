@@ -45,7 +45,7 @@ func New(cfg config.Config) (*MetadataServer, error) {
 	mvcc := transaction.NewMVCCManager(cfg.TxnTimeout)
 
 	catalogMgr := catalog.NewCatalogManager(pgClient, locks, mvcc)
-	partitionRegistry := catalog.NewPartitionRegistry(pgClient, locks, mvcc, cfg.CacheCapacity)
+	partitionRegistry := catalog.NewPartitionRegistry(pgClient, locks, mvcc, cfg.CacheCapacity, cfg.DisableCache)
 	schemaStore := catalog.NewSchemaStore(pgClient, locks)
 
 	return &MetadataServer{
