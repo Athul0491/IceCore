@@ -66,20 +66,31 @@ Server default gRPC endpoint:
 127.0.0.1:50051
 ```
 
-### Running Integration Tests
-Start PostgreSQL first:
+### Running Tests
+Unit tests do not require Docker or PostgreSQL:
 
 ```bash
-docker compose up -d postgres
+make test-unit
 ```
-followed by
+
+Integration tests use the PostgreSQL service from Docker Compose:
+
 ```bash
-$env:PG_CONN_STRING="host=127.0.0.1 port=5432 dbname=metadata user=metadata_user password=metadata_pass"
-go test ./... -v
+make test-integration
 ```
-Alternative using Makefile:
+
+Run both:
+
 ```bash
 make test
+```
+
+If Make is not installed on Windows, the equivalent commands are:
+
+```powershell
+go test -v ./cmd/... ./gen/... ./internal/...
+docker compose up -d --wait postgres
+go test -v ./tests
 ```
 ## Configuration
 Runtime configuration is loaded from environment variables in `internal/config/config.go`.

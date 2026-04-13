@@ -1,5 +1,8 @@
 PROTO_DIR=proto
 PROTO_FILE=$(PROTO_DIR)/metadata_service.proto
+UNIT_PACKAGES=./cmd/... ./gen/... ./internal/...
+
+.PHONY: proto run test test-unit test-integration tidy
 
 proto:
 	protoc \
@@ -11,8 +14,14 @@ proto:
 run:
 	go run ./cmd/server
 
-test:
-	go test -v ./...
+test: test-unit test-integration
+
+test-unit:
+	go test -v $(UNIT_PACKAGES)
+
+test-integration:
+	docker compose up -d --wait postgres
+	go test -v ./tests
 
 tidy:
 	go mod tidy
