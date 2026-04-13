@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  test:
+    name: Go tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: metadata
+          POSTGRES_USER: metadata_user
+          POSTGRES_PASSWORD: metadata_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U metadata_user -d metadata"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PG_CONN_STRING: host=127.0.0.1 port=5432 dbname=metadata user=metadata_user password=metadata_pass
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run unit tests
+        run: go test -v ./cmd/... ./gen/... ./internal/...
+
+      - name: Initialize PostgreSQL schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker cp scripts/init_db.sql "${{ job.services.postgres.id }}:/tmp/init_db.sql"
+          docker exec "${{ job.services.postgres.id }}" psql -U metadata_user -d metadata -f /tmp/init_db.sql
+
+      - name: Run integration tests
+        run: go test -v ./tests
+
+      - name: Build Docker image
+        run: docker build .

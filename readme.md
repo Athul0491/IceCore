@@ -338,6 +338,9 @@ More payloads are available in `scripts/grpc/` for:
 - ad-hoc variations of these requests
 
 ## Development Commands
+GitHub Actions runs unit tests, integration tests with PostgreSQL, and a Docker
+image build on pushes and pull requests.
+
 Generate protobuf code:
 ```bash
 make proto
