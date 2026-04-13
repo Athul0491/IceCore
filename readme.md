@@ -30,12 +30,26 @@ scripts/grpc/               # Example grpcurl payloads and helper scripts
 
 ## Quick Start
 
-### 1. Start PostgreSQL
+### 1. Run the full stack with Docker Compose
+```bash
+docker compose up --build
+```
+
+This starts PostgreSQL, waits for it to become healthy, builds the Go gRPC
+server image, and starts the metadata server on:
+
+```text
+127.0.0.1:50051
+```
+
+On Windows with Docker Desktop and WSL enabled, run the same command from this
+repository directory in PowerShell or a WSL shell.
+
+### Alternative: Start only PostgreSQL and run the server locally
 ```bash
 docker compose up -d postgres
 ```
 
-### 2. Run the server
 PowerShell:
 ```powershell
 $env:PG_CONN_STRING="host=127.0.0.1 port=5432 dbname=metadata user=metadata_user password=metadata_pass"
@@ -52,7 +66,7 @@ Server default gRPC endpoint:
 127.0.0.1:50051
 ```
 
-### 2. Running Integration Tests
+### Running Integration Tests
 Start PostgreSQL first:
 
 ```bash
