@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -67,6 +68,54 @@ func setupTestServer(t *testing.T) (metadata.MetadataServiceClient, func()) {
 	}
 
 	return client, cleanup
+}
+
+func createTable(t *testing.T, ctx context.Context, client metadata.MetadataServiceClient, tableName string) {
+	t.Helper()
+
+	resp, err := client.CreateTable(ctx, &metadata.CreateTableRequest{
+		TableName:     tableName,
+		SchemaJson:    `{"fields":[{"name":"event_id","type":"long"}]}`,
+		PartitionSpec: "month",
+	})
+	if err != nil {
+		t.Fatalf("CreateTable(%s) failed: %v", tableName, err)
+	}
+	if !resp.GetSuccess() {
+		t.Fatalf("CreateTable(%s) unsuccessful: %s", tableName, resp.GetErrorMsg())
+	}
+}
+
+func makePartition(key string) *metadata.PartitionInfo {
+	return &metadata.PartitionInfo{
+		PartitionKey: key,
+		DataFilePath: "s3://bucket/events/" + key + "/part-0.parquet",
+		RowCount:     100000,
+		SizeBytes:    15000000,
+		FileFormat:   "parquet",
+	}
+}
+
+func commitSnapshot(
+	t *testing.T,
+	ctx context.Context,
+	client metadata.MetadataServiceClient,
+	tableName string,
+	parentSnapshotID uint64,
+	partitions ...*metadata.PartitionInfo,
+) *metadata.SnapshotResponse {
+	t.Helper()
+
+	resp, err := client.CommitSnapshot(ctx, &metadata.SnapshotRequest{
+		TableName:        tableName,
+		ParentSnapshotId: parentSnapshotID,
+		Operation:        "append",
+		NewPartitions:    partitions,
+	})
+	if err != nil {
+		t.Fatalf("CommitSnapshot(%s) failed: %v", tableName, err)
+	}
+	return resp
 }
 
 func TestCreateTableAndGetMetadata(t *testing.T) {
@@ -215,6 +264,113 @@ func TestListSnapshots(t *testing.T) {
 	}
 	if resp.GetSnapshots()[0].GetSnapshotId() != 1 {
 		t.Fatalf("expected snapshotId=1, got %d", resp.GetSnapshots()[0].GetSnapshotId())
+	}
+}
+
+func TestListTablesPagination(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events_a")
+	createTable(t, ctx, client, "events_b")
+	createTable(t, ctx, client, "events_c")
+
+	firstPage, err := client.ListTables(ctx, &metadata.ListTablesRequest{
+		PageSize:  2,
+		PageToken: "not-a-number",
+	})
+	if err != nil {
+		t.Fatalf("first ListTables failed: %v", err)
+	}
+	if len(firstPage.GetTables()) != 2 {
+		t.Fatalf("expected 2 tables on first page, got %d", len(firstPage.GetTables()))
+	}
+	if firstPage.GetTables()[0].GetTableName() != "events_a" || firstPage.GetTables()[1].GetTableName() != "events_b" {
+		t.Fatalf("unexpected first page order: %v", firstPage.GetTables())
+	}
+	if firstPage.GetNextPageToken() == "" {
+		t.Fatalf("expected next page token on first page")
+	}
+
+	secondPage, err := client.ListTables(ctx, &metadata.ListTablesRequest{
+		PageSize:  2,
+		PageToken: firstPage.GetNextPageToken(),
+	})
+	if err != nil {
+		t.Fatalf("second ListTables failed: %v", err)
+	}
+	if len(secondPage.GetTables()) != 1 {
+		t.Fatalf("expected 1 table on second page, got %d", len(secondPage.GetTables()))
+	}
+	if secondPage.GetTables()[0].GetTableName() != "events_c" {
+		t.Fatalf("unexpected second page table: %q", secondPage.GetTables()[0].GetTableName())
+	}
+	if secondPage.GetNextPageToken() != "" {
+		t.Fatalf("expected no next page token on final partial page, got %q", secondPage.GetNextPageToken())
+	}
+}
+
+func TestGetPartitionsPagination(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+	commitResp := commitSnapshot(
+		t,
+		ctx,
+		client,
+		"events",
+		0,
+		makePartition("month=2025-01"),
+		makePartition("month=2025-02"),
+		makePartition("month=2025-03"),
+	)
+	if !commitResp.GetSuccess() {
+		t.Fatalf("CommitSnapshot unsuccessful: %s", commitResp.GetErrorMsg())
+	}
+
+	firstPage, err := client.GetPartitions(ctx, &metadata.PartitionRequest{
+		TableName: "events",
+		PageSize:  2,
+		PageToken: "not-a-number",
+	})
+	if err != nil {
+		t.Fatalf("first GetPartitions failed: %v", err)
+	}
+	if len(firstPage.GetPartitions()) != 2 {
+		t.Fatalf("expected 2 partitions on first page, got %d", len(firstPage.GetPartitions()))
+	}
+	if firstPage.GetPartitions()[0].GetPartitionKey() != "month=2025-01" ||
+		firstPage.GetPartitions()[1].GetPartitionKey() != "month=2025-02" {
+		t.Fatalf("unexpected first page partitions: %v", firstPage.GetPartitions())
+	}
+	if firstPage.GetNextPageToken() == "" {
+		t.Fatalf("expected next page token on first page")
+	}
+
+	secondPage, err := client.GetPartitions(ctx, &metadata.PartitionRequest{
+		TableName: "events",
+		PageSize:  2,
+		PageToken: firstPage.GetNextPageToken(),
+	})
+	if err != nil {
+		t.Fatalf("second GetPartitions failed: %v", err)
+	}
+	if len(secondPage.GetPartitions()) != 1 {
+		t.Fatalf("expected 1 partition on second page, got %d", len(secondPage.GetPartitions()))
+	}
+	if secondPage.GetPartitions()[0].GetPartitionKey() != "month=2025-03" {
+		t.Fatalf("unexpected second page partition: %q", secondPage.GetPartitions()[0].GetPartitionKey())
+	}
+	if secondPage.GetPartitions()[0].GetPartitionKey() == firstPage.GetPartitions()[0].GetPartitionKey() ||
+		secondPage.GetPartitions()[0].GetPartitionKey() == firstPage.GetPartitions()[1].GetPartitionKey() {
+		t.Fatalf("expected no duplicate partitions across pages")
 	}
 }
 
@@ -401,60 +557,61 @@ func TestCommitSnapshotBadParentFails(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := client.CreateTable(ctx, &metadata.CreateTableRequest{
-		TableName:     "events",
-		SchemaJson:    `{"fields":[{"name":"event_id","type":"long"}]}`,
-		PartitionSpec: "month",
-	})
-	if err != nil {
-		t.Fatalf("CreateTable failed: %v", err)
-	}
+	createTable(t, ctx, client, "events")
 
 	// first valid snapshot
-	firstCommit, err := client.CommitSnapshot(ctx, &metadata.SnapshotRequest{
-		TableName:        "events",
-		ParentSnapshotId: 0,
-		Operation:        "append",
-		NewPartitions: []*metadata.PartitionInfo{
-			{
-				PartitionKey: "month=2025-01",
-				DataFilePath: "s3://bucket/events/month=2025-01/part-0.parquet",
-				RowCount:     100000,
-				SizeBytes:    15000000,
-				FileFormat:   "parquet",
-			},
-		},
-	})
-	if err != nil {
-		t.Fatalf("first CommitSnapshot failed: %v", err)
-	}
+	firstCommit := commitSnapshot(t, ctx, client, "events", 0, makePartition("month=2025-01"))
 	if !firstCommit.GetSuccess() {
 		t.Fatalf("first CommitSnapshot unsuccessful: %s", firstCommit.GetErrorMsg())
 	}
-
-	// stale parent id should fail now that current snapshot is 1
-	secondCommit, err := client.CommitSnapshot(ctx, &metadata.SnapshotRequest{
-		TableName:        "events",
-		ParentSnapshotId: 0,
-		Operation:        "append",
-		NewPartitions: []*metadata.PartitionInfo{
-			{
-				PartitionKey: "month=2025-02",
-				DataFilePath: "s3://bucket/events/month=2025-02/part-0.parquet",
-				RowCount:     200000,
-				SizeBytes:    25000000,
-				FileFormat:   "parquet",
-			},
-		},
-	})
-	if err != nil {
-		t.Fatalf("second CommitSnapshot RPC failed unexpectedly: %v", err)
+	if firstCommit.GetSnapshotId() != 1 {
+		t.Fatalf("expected first snapshot id 1, got %d", firstCommit.GetSnapshotId())
 	}
+
+	currentParentCommit := commitSnapshot(t, ctx, client, "events", firstCommit.GetSnapshotId(), makePartition("month=2025-02"))
+	if !currentParentCommit.GetSuccess() {
+		t.Fatalf("current-parent CommitSnapshot unsuccessful: %s", currentParentCommit.GetErrorMsg())
+	}
+	if currentParentCommit.GetSnapshotId() != 2 {
+		t.Fatalf("expected second snapshot id 2, got %d", currentParentCommit.GetSnapshotId())
+	}
+
+	// stale parent id should fail now that current snapshot is 2
+	secondCommit := commitSnapshot(t, ctx, client, "events", firstCommit.GetSnapshotId(), makePartition("month=2025-03"))
 	if secondCommit.GetSuccess() {
 		t.Fatalf("expected stale-parent CommitSnapshot to fail")
 	}
 	if secondCommit.GetErrorMsg() == "" {
 		t.Fatalf("expected stale-parent CommitSnapshot to return an error message")
+	}
+	if !strings.Contains(secondCommit.GetErrorMsg(), "current=2") {
+		t.Fatalf("expected stale-parent error to mention current snapshot, got %q", secondCommit.GetErrorMsg())
+	}
+
+	snapshotsResp, err := client.ListSnapshots(ctx, &metadata.ListSnapshotsRequest{
+		TableName: "events",
+		Limit:     10,
+	})
+	if err != nil {
+		t.Fatalf("ListSnapshots failed: %v", err)
+	}
+	if len(snapshotsResp.GetSnapshots()) != 2 {
+		t.Fatalf("expected failed stale commit not to create a snapshot, got %d snapshots", len(snapshotsResp.GetSnapshots()))
+	}
+
+	partResp, err := client.GetPartitions(ctx, &metadata.PartitionRequest{
+		TableName: "events",
+	})
+	if err != nil {
+		t.Fatalf("GetPartitions failed: %v", err)
+	}
+	if len(partResp.GetPartitions()) != 2 {
+		t.Fatalf("expected failed stale commit not to add partitions, got %d partitions", len(partResp.GetPartitions()))
+	}
+	for _, part := range partResp.GetPartitions() {
+		if part.GetPartitionKey() == "month=2025-03" {
+			t.Fatalf("expected stale commit partition not to be visible")
+		}
 	}
 }
 

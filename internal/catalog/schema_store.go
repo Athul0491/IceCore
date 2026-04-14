@@ -2,6 +2,8 @@ package catalog
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 
 	"github.com/Athul0491/IceCore/internal/db"
 	"github.com/Athul0491/IceCore/internal/lock"
@@ -147,12 +149,18 @@ func (s *SchemaStore) ValidateSchemaChange(
 	currentJSON string,
 	proposedJSON string,
 ) string {
-	if proposedJSON == "" || proposedJSON == "{}" {
+	_ = currentJSON
+
+	if strings.TrimSpace(proposedJSON) == "" {
 		return "Proposed schema cannot be empty"
 	}
 
-	if proposedJSON[0] != '{' || proposedJSON[len(proposedJSON)-1] != '}' {
+	var schema map[string]any
+	if err := json.Unmarshal([]byte(proposedJSON), &schema); err != nil || schema == nil {
 		return "Proposed schema must be valid JSON object"
+	}
+	if len(schema) == 0 {
+		return "Proposed schema cannot be empty"
 	}
 
 	return ""

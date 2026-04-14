@@ -15,6 +15,7 @@ dist/
 # Go modules
 vendor/
 go.work
+.gocache/
 
 # =========================
 # Generated files
