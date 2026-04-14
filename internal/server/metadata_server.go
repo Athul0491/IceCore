@@ -179,7 +179,7 @@ func (s *MetadataServer) AlterTable(ctx context.Context, req *metadata.AlterTabl
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if current != nil {
-			if msg := s.schemas.ValidateSchemaChange(current.SchemaJSON, alt.NewSchemaJson); msg != "" {
+			if msg := s.schemas.ValidateSchemaChange(alt.NewSchemaJson); msg != "" {
 				return &metadata.OperationResponse{
 					Success:  false,
 					ErrorMsg: msg,

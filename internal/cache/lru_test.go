@@ -1,6 +1,9 @@
 package cache
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestNewLRUNormalizesNonPositiveCapacity(t *testing.T) {
 	for _, capacity := range []int{0, -10} {
@@ -107,7 +110,7 @@ func TestLRUInvalidateClearAndZeroHitRate(t *testing.T) {
 	}
 
 	removed := lru.InvalidateIf(func(key string) bool {
-		return len(key) >= len("users:") && key[:len("users:")] == "users:"
+		return strings.HasPrefix(key, "users:")
 	})
 	if removed != 1 {
 		t.Fatalf("expected 1 item removed by predicate, got %d", removed)

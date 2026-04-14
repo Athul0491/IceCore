@@ -146,11 +146,8 @@ func (s *SchemaStore) ListSchemaHistory(
 
 // Simple validation (same as your C++ logic)
 func (s *SchemaStore) ValidateSchemaChange(
-	currentJSON string,
 	proposedJSON string,
 ) string {
-	_ = currentJSON
-
 	if strings.TrimSpace(proposedJSON) == "" {
 		return "Proposed schema cannot be empty"
 	}

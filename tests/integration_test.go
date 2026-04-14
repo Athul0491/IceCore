@@ -118,6 +118,88 @@ func commitSnapshot(
 	return resp
 }
 
+func tableNames(tables []*metadata.TableSummary) string {
+	names := make([]string, 0, len(tables))
+	for _, table := range tables {
+		if table == nil {
+			continue
+		}
+		names = append(names, table.GetTableName())
+	}
+	return strings.Join(names, ",")
+}
+
+func partitionKeys(partitions []*metadata.PartitionInfo) string {
+	keys := make([]string, 0, len(partitions))
+	for _, partition := range partitions {
+		if partition == nil {
+			continue
+		}
+		keys = append(keys, partition.GetPartitionKey())
+	}
+	return strings.Join(keys, ",")
+}
+
+func TestTableNamesWithNilAndEmptyInput(t *testing.T) {
+	tests := []struct {
+		name   string
+		tables []*metadata.TableSummary
+		want   string
+	}{
+		{
+			name: "nil slice",
+		},
+		{
+			name:   "empty slice",
+			tables: []*metadata.TableSummary{},
+		},
+		{
+			name: "nil table",
+			tables: []*metadata.TableSummary{
+				nil,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tableNames(tt.tables); got != tt.want {
+				t.Fatalf("expected %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestPartitionKeysHandlesNilAndEmptyInput(t *testing.T) {
+	tests := []struct {
+		name       string
+		partitions []*metadata.PartitionInfo
+		want       string
+	}{
+		{
+			name: "nil slice",
+		},
+		{
+			name:       "empty slice",
+			partitions: []*metadata.PartitionInfo{},
+		},
+		{
+			name: "nil partition",
+			partitions: []*metadata.PartitionInfo{
+				nil,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := partitionKeys(tt.partitions); got != tt.want {
+				t.Fatalf("expected %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
 func TestCreateTableAndGetMetadata(t *testing.T) {
 	client, cleanup := setupTestServer(t)
 	defer cleanup()
@@ -278,12 +360,23 @@ func TestListTablesPagination(t *testing.T) {
 	createTable(t, ctx, client, "events_b")
 	createTable(t, ctx, client, "events_c")
 
-	firstPage, err := client.ListTables(ctx, &metadata.ListTablesRequest{
+	defaultedPage, err := client.ListTables(ctx, &metadata.ListTablesRequest{
 		PageSize:  2,
 		PageToken: "not-a-number",
 	})
 	if err != nil {
+		t.Fatalf("ListTables with invalid page token failed: %v", err)
+	}
+
+	firstPage, err := client.ListTables(ctx, &metadata.ListTablesRequest{
+		PageSize: 2,
+	})
+	if err != nil {
 		t.Fatalf("first ListTables failed: %v", err)
+	}
+	if tableNames(defaultedPage.GetTables()) != tableNames(firstPage.GetTables()) ||
+		defaultedPage.GetNextPageToken() != firstPage.GetNextPageToken() {
+		t.Fatalf("expected invalid ListTables page token to default to first page")
 	}
 	if len(firstPage.GetTables()) != 2 {
 		t.Fatalf("expected 2 tables on first page, got %d", len(firstPage.GetTables()))
@@ -335,13 +428,25 @@ func TestGetPartitionsPagination(t *testing.T) {
 		t.Fatalf("CommitSnapshot unsuccessful: %s", commitResp.GetErrorMsg())
 	}
 
-	firstPage, err := client.GetPartitions(ctx, &metadata.PartitionRequest{
+	defaultedPage, err := client.GetPartitions(ctx, &metadata.PartitionRequest{
 		TableName: "events",
 		PageSize:  2,
 		PageToken: "not-a-number",
 	})
 	if err != nil {
+		t.Fatalf("GetPartitions with invalid page token failed: %v", err)
+	}
+
+	firstPage, err := client.GetPartitions(ctx, &metadata.PartitionRequest{
+		TableName: "events",
+		PageSize:  2,
+	})
+	if err != nil {
 		t.Fatalf("first GetPartitions failed: %v", err)
+	}
+	if partitionKeys(defaultedPage.GetPartitions()) != partitionKeys(firstPage.GetPartitions()) ||
+		defaultedPage.GetNextPageToken() != firstPage.GetNextPageToken() {
+		t.Fatalf("expected invalid GetPartitions page token to default to first page")
 	}
 	if len(firstPage.GetPartitions()) != 2 {
 		t.Fatalf("expected 2 partitions on first page, got %d", len(firstPage.GetPartitions()))
