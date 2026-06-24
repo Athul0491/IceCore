@@ -26,6 +26,7 @@ type MetadataServer struct {
 	catalog    *catalog.CatalogManager
 	partitions *catalog.PartitionRegistry
 	schemas    *catalog.SchemaStore
+	manifests  *catalog.ManifestStore
 }
 
 func defaultString(v, fallback string) string {
@@ -47,6 +48,7 @@ func New(cfg config.Config) (*MetadataServer, error) {
 	catalogMgr := catalog.NewCatalogManager(pgClient, locks, mvcc)
 	partitionRegistry := catalog.NewPartitionRegistry(pgClient, locks, mvcc, cfg.CacheCapacity, cfg.DisableCache)
 	schemaStore := catalog.NewSchemaStore(pgClient, locks)
+	manifestStore := catalog.NewManifestStore(pgClient)
 
 	return &MetadataServer{
 		pgClient:   pgClient,
@@ -55,6 +57,7 @@ func New(cfg config.Config) (*MetadataServer, error) {
 		catalog:    catalogMgr,
 		partitions: partitionRegistry,
 		schemas:    schemaStore,
+		manifests:  manifestStore,
 	}, nil
 }
 
@@ -535,4 +538,70 @@ func (s *MetadataServer) CleanupExpiredTransactions() int {
 		return 0
 	}
 	return s.mvcc.CleanupExpiredTransactions()
+}
+
+func (s *MetadataServer) GetManifestList(ctx context.Context, req *metadata.GetManifestListRequest) (*metadata.ManifestListResponse, error) {
+	if req.GetTableName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "table_name is required")
+	}
+	if req.GetSnapshotId() == 0 {
+		return nil, status.Error(codes.InvalidArgument, "snapshot_id is required")
+	}
+
+	list, files, err := s.manifests.GetManifestList(ctx, req.GetTableName(), req.GetSnapshotId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if list == nil {
+		return nil, status.Error(codes.NotFound, "manifest list not found for snapshot")
+	}
+
+	summaries := make([]*metadata.ManifestFileSummary, 0, len(files))
+	for _, f := range files {
+		summaries = append(summaries, &metadata.ManifestFileSummary{
+			ManifestFileId:        f.ManifestFileID,
+			ManifestPath:          f.ManifestPath,
+			PartitionSpecId:       f.PartitionSpecID,
+			AddedFilesCount:       f.AddedFilesCount,
+			DeletedFilesCount:     f.DeletedFilesCount,
+			AddedRowsCount:        f.AddedRowsCount,
+			DeletedRowsCount:      f.DeletedRowsCount,
+			PartitionSummariesJson: f.PartitionSummaries,
+		})
+	}
+
+	return &metadata.ManifestListResponse{
+		SnapshotId:    req.GetSnapshotId(),
+		ManifestCount: list.ManifestCount,
+		Manifests:     summaries,
+	}, nil
+}
+
+func (s *MetadataServer) GetManifest(ctx context.Context, req *metadata.GetManifestRequest) (*metadata.ManifestFileDetail, error) {
+	if req.GetTableName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "table_name is required")
+	}
+	if req.GetManifestFileId() == 0 {
+		return nil, status.Error(codes.InvalidArgument, "manifest_file_id is required")
+	}
+
+	f, err := s.manifests.GetManifestFile(ctx, req.GetTableName(), req.GetManifestFileId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if f == nil {
+		return nil, status.Error(codes.NotFound, "manifest file not found")
+	}
+
+	return &metadata.ManifestFileDetail{
+		ManifestFileId:        f.ManifestFileID,
+		SnapshotId:            uint64(f.SnapshotID),
+		ManifestPath:          f.ManifestPath,
+		PartitionSpecId:       f.PartitionSpecID,
+		AddedFilesCount:       f.AddedFilesCount,
+		DeletedFilesCount:     f.DeletedFilesCount,
+		AddedRowsCount:        f.AddedRowsCount,
+		DeletedRowsCount:      f.DeletedRowsCount,
+		PartitionSummariesJson: f.PartitionSummaries,
+	}, nil
 }

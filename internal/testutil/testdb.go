@@ -37,6 +37,8 @@ func ResetDB(ctx context.Context) error {
 
 	queries := []string{
 		`TRUNCATE TABLE transactions RESTART IDENTITY CASCADE`,
+		`TRUNCATE TABLE manifest_files RESTART IDENTITY CASCADE`,
+		`TRUNCATE TABLE manifest_lists RESTART IDENTITY CASCADE`,
 		`TRUNCATE TABLE partitions RESTART IDENTITY CASCADE`,
 		`TRUNCATE TABLE snapshots RESTART IDENTITY CASCADE`,
 		`TRUNCATE TABLE schema_history RESTART IDENTITY CASCADE`,

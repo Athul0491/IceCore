@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -179,7 +180,7 @@ func (r *PartitionRegistry) CommitSnapshot(
 	}
 	defer tx.Rollback(ctx)
 
-	newSnap, err := r.pg.InsertSnapshotTx(
+	newSnap, tableID, err := r.pg.InsertSnapshotTx(
 		ctx,
 		tx,
 		tableName,
@@ -214,6 +215,56 @@ func (r *PartitionRegistry) CommitSnapshot(
 				Success:  false,
 				ErrorMsg: "failed to mark partition deleted: " + key,
 			}
+		}
+	}
+
+	manifestCount := 0
+
+	if len(newPartitions) > 0 {
+		summaries := make([]map[string]string, 0, len(newPartitions))
+		var totalRows int64
+		for _, p := range newPartitions {
+			summaries = append(summaries, map[string]string{"partition_key": p.PartitionKey})
+			totalRows += p.RowCount
+		}
+		summariesJSON, _ := json.Marshal(summaries)
+		mf := db.ManifestFileRow{
+			TableID:            tableID,
+			SnapshotID:         int64(newSnap),
+			ManifestPath:       fmt.Sprintf("iceberg://%s/%d/%d.avro", tableName, newSnap, manifestCount),
+			AddedFilesCount:    int32(len(newPartitions)),
+			AddedRowsCount:     totalRows,
+			PartitionSummaries: string(summariesJSON),
+		}
+		if _, err := r.pg.InsertManifestFileTx(ctx, tx, mf); err != nil {
+			return CommitResult{Success: false, ErrorMsg: "failed to insert added manifest: " + err.Error()}
+		}
+		manifestCount++
+	}
+
+	if len(deletedPartitionKeys) > 0 {
+		summaries := make([]map[string]string, 0, len(deletedPartitionKeys))
+		for _, k := range deletedPartitionKeys {
+			summaries = append(summaries, map[string]string{"partition_key": k})
+		}
+		summariesJSON, _ := json.Marshal(summaries)
+		mf := db.ManifestFileRow{
+			TableID:            tableID,
+			SnapshotID:         int64(newSnap),
+			ManifestPath:       fmt.Sprintf("iceberg://%s/%d/%d.avro", tableName, newSnap, manifestCount),
+			DeletedFilesCount:  int32(len(deletedPartitionKeys)),
+			PartitionSummaries: string(summariesJSON),
+		}
+		if _, err := r.pg.InsertManifestFileTx(ctx, tx, mf); err != nil {
+			return CommitResult{Success: false, ErrorMsg: "failed to insert deleted manifest: " + err.Error()}
+		}
+		manifestCount++
+	}
+
+	if _, err := r.pg.InsertManifestListTx(ctx, tx, int64(newSnap), tableID, int32(manifestCount)); err != nil {
+		return CommitResult{
+			Success:  false,
+			ErrorMsg: "failed to insert manifest list: " + err.Error(),
 		}
 	}
 
@@ -283,3 +334,4 @@ func (r *PartitionRegistry) resolveSnapshot(
 func (r *PartitionRegistry) makeCacheKey(table string, snapshot uint64) string {
 	return table + ":" + strconv.FormatUint(snapshot, 10)
 }
+

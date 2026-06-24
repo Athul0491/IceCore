@@ -71,3 +71,34 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE INDEX idx_txn_active
     ON transactions(status)
     WHERE status = 'active';
+
+CREATE TABLE IF NOT EXISTS manifest_files (
+    manifest_file_id    BIGSERIAL PRIMARY KEY,
+    table_id            BIGINT NOT NULL REFERENCES tables(table_id),
+    snapshot_id         BIGINT NOT NULL REFERENCES snapshots(snapshot_id),
+    manifest_path       TEXT NOT NULL,
+    partition_spec_id   INT NOT NULL DEFAULT 0,
+    added_files_count   INT NOT NULL DEFAULT 0,
+    deleted_files_count INT NOT NULL DEFAULT 0,
+    added_rows_count    BIGINT NOT NULL DEFAULT 0,
+    deleted_rows_count  BIGINT NOT NULL DEFAULT 0,
+    partition_summaries JSONB NOT NULL DEFAULT '[]',
+    created_at          TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_manifest_files_snapshot
+    ON manifest_files(snapshot_id);
+
+CREATE INDEX idx_manifest_files_table
+    ON manifest_files(table_id, snapshot_id);
+
+CREATE TABLE IF NOT EXISTS manifest_lists (
+    manifest_list_id BIGSERIAL PRIMARY KEY,
+    snapshot_id      BIGINT NOT NULL UNIQUE REFERENCES snapshots(snapshot_id),
+    table_id         BIGINT NOT NULL REFERENCES tables(table_id),
+    manifest_count   INT NOT NULL DEFAULT 0,
+    created_at       TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_manifest_lists_snapshot
+    ON manifest_lists(snapshot_id);

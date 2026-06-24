@@ -20,6 +20,9 @@ service MetadataService {
     rpc BeginTransaction(TransactionRequest) returns (TransactionResponse);
     rpc CommitTransaction(CommitRequest) returns (OperationResponse);
     rpc AbortTransaction(AbortRequest) returns (OperationResponse);
+
+    rpc GetManifestList(GetManifestListRequest) returns (ManifestListResponse);
+    rpc GetManifest(GetManifestRequest) returns (ManifestFileDetail);
 }
 
 
@@ -184,4 +187,44 @@ message AbortRequest {
 message OperationResponse {
     bool success = 1;
     string error_msg = 2;
+}
+
+
+message GetManifestListRequest {
+    string table_name = 1;
+    uint64 snapshot_id = 2;
+}
+
+message ManifestFileSummary {
+    int64  manifest_file_id         = 1;
+    string manifest_path            = 2;
+    int32  partition_spec_id        = 3;
+    int32  added_files_count        = 4;
+    int32  deleted_files_count      = 5;
+    int64  added_rows_count         = 6;
+    int64  deleted_rows_count       = 7;
+    string partition_summaries_json = 8;
+}
+
+message ManifestListResponse {
+    uint64                       snapshot_id    = 1;
+    int32                        manifest_count = 2;
+    repeated ManifestFileSummary manifests      = 3;
+}
+
+message GetManifestRequest {
+    string table_name       = 1;
+    int64  manifest_file_id = 2;
+}
+
+message ManifestFileDetail {
+    int64  manifest_file_id         = 1;
+    uint64 snapshot_id              = 2;
+    string manifest_path            = 3;
+    int32  partition_spec_id        = 4;
+    int32  added_files_count        = 5;
+    int32  deleted_files_count      = 6;
+    int64  added_rows_count         = 7;
+    int64  deleted_rows_count       = 8;
+    string partition_summaries_json = 9;
 }

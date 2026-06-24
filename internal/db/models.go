@@ -42,3 +42,23 @@ type TransactionRow struct {
 	StartedAt      string
 	CommittedAt    *string
 }
+
+type ManifestFileRow struct {
+	ManifestFileID     int64
+	TableID            int64
+	SnapshotID         int64
+	ManifestPath       string
+	PartitionSpecID    int32
+	AddedFilesCount    int32
+	DeletedFilesCount  int32
+	AddedRowsCount     int64
+	DeletedRowsCount   int64
+	PartitionSummaries string // raw JSONB as text
+}
+
+type ManifestListRow struct {
+	ManifestListID int64
+	SnapshotID     int64
+	TableID        int64
+	ManifestCount  int32
+}

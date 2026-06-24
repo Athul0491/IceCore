@@ -492,9 +492,8 @@ func (c *PGClient) InsertSnapshotTx(
 	operation string,
 	addedCount int32,
 	deletedCount int32,
-) (uint64, error) {
-	var tableID int64
-	err := tx.QueryRow(
+) (snapshotID uint64, tableID int64, err error) {
+	err = tx.QueryRow(
 		ctx,
 		`SELECT table_id
 		   FROM tables
@@ -503,12 +502,12 @@ func (c *PGClient) InsertSnapshotTx(
 	).Scan(&tableID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, nil
+			return 0, 0, nil
 		}
-		return 0, err
+		return 0, 0, err
 	}
 
-	var snapshotID int64
+	var rawID int64
 	err = tx.QueryRow(
 		ctx,
 		`INSERT INTO snapshots (
@@ -518,15 +517,169 @@ func (c *PGClient) InsertSnapshotTx(
 		 VALUES ($1, $2, $3, $4, $5)
 		 RETURNING snapshot_id`,
 		tableID, int64(parentSnapshotID), operation, addedCount, deletedCount,
-	).Scan(&snapshotID)
+	).Scan(&rawID)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
-	if snapshotID < 0 {
-		return 0, nil
+	if rawID < 0 {
+		return 0, tableID, nil
 	}
-	return uint64(snapshotID), nil
+	return uint64(rawID), tableID, nil
+}
+
+func (c *PGClient) InsertManifestFileTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	row ManifestFileRow,
+) (int64, error) {
+	var id int64
+	err := tx.QueryRow(
+		ctx,
+		`INSERT INTO manifest_files (
+		     table_id, snapshot_id, manifest_path, partition_spec_id,
+		     added_files_count, deleted_files_count,
+		     added_rows_count, deleted_rows_count,
+		     partition_summaries
+		 )
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
+		 RETURNING manifest_file_id`,
+		row.TableID,
+		row.SnapshotID,
+		row.ManifestPath,
+		row.PartitionSpecID,
+		row.AddedFilesCount,
+		row.DeletedFilesCount,
+		row.AddedRowsCount,
+		row.DeletedRowsCount,
+		row.PartitionSummaries,
+	).Scan(&id)
+	return id, err
+}
+
+func (c *PGClient) InsertManifestListTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	snapshotID int64,
+	tableID int64,
+	manifestCount int32,
+) (int64, error) {
+	var id int64
+	err := tx.QueryRow(
+		ctx,
+		`INSERT INTO manifest_lists (snapshot_id, table_id, manifest_count)
+		 VALUES ($1, $2, $3)
+		 RETURNING manifest_list_id`,
+		snapshotID, tableID, manifestCount,
+	).Scan(&id)
+	return id, err
+}
+
+func (c *PGClient) GetManifestList(
+	ctx context.Context,
+	tableName string,
+	snapshotID uint64,
+) (*ManifestListRow, []ManifestFileRow, error) {
+	tableID, err := c.GetTableID(ctx, tableName)
+	if err != nil {
+		return nil, nil, err
+	}
+	if tableID < 0 {
+		return nil, nil, nil
+	}
+
+	var list ManifestListRow
+	err = c.Pool.QueryRow(
+		ctx,
+		`SELECT manifest_list_id, snapshot_id, table_id, manifest_count
+		   FROM manifest_lists
+		  WHERE snapshot_id = $1 AND table_id = $2`,
+		int64(snapshotID), tableID,
+	).Scan(&list.ManifestListID, &list.SnapshotID, &list.TableID, &list.ManifestCount)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil, nil
+		}
+		return nil, nil, err
+	}
+
+	rows, err := c.Pool.Query(
+		ctx,
+		`SELECT manifest_file_id, table_id, snapshot_id, manifest_path,
+		        partition_spec_id, added_files_count, deleted_files_count,
+		        added_rows_count, deleted_rows_count, partition_summaries::text
+		   FROM manifest_files
+		  WHERE snapshot_id = $1
+		  ORDER BY manifest_file_id`,
+		int64(snapshotID),
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	var files []ManifestFileRow
+	for rows.Next() {
+		var f ManifestFileRow
+		if err := rows.Scan(
+			&f.ManifestFileID,
+			&f.TableID,
+			&f.SnapshotID,
+			&f.ManifestPath,
+			&f.PartitionSpecID,
+			&f.AddedFilesCount,
+			&f.DeletedFilesCount,
+			&f.AddedRowsCount,
+			&f.DeletedRowsCount,
+			&f.PartitionSummaries,
+		); err != nil {
+			return nil, nil, err
+		}
+		files = append(files, f)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	return &list, files, nil
+}
+
+func (c *PGClient) GetManifestFile(
+	ctx context.Context,
+	tableName string,
+	manifestFileID int64,
+) (*ManifestFileRow, error) {
+	var f ManifestFileRow
+	err := c.Pool.QueryRow(
+		ctx,
+		`SELECT mf.manifest_file_id, mf.table_id, mf.snapshot_id, mf.manifest_path,
+		        mf.partition_spec_id, mf.added_files_count, mf.deleted_files_count,
+		        mf.added_rows_count, mf.deleted_rows_count, mf.partition_summaries::text
+		   FROM manifest_files mf
+		   JOIN tables t ON t.table_id = mf.table_id
+		  WHERE mf.manifest_file_id = $1
+		    AND t.table_name = $2
+		    AND t.is_deleted = false`,
+		manifestFileID, tableName,
+	).Scan(
+		&f.ManifestFileID,
+		&f.TableID,
+		&f.SnapshotID,
+		&f.ManifestPath,
+		&f.PartitionSpecID,
+		&f.AddedFilesCount,
+		&f.DeletedFilesCount,
+		&f.AddedRowsCount,
+		&f.DeletedRowsCount,
+		&f.PartitionSummaries,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &f, nil
 }
 
 func (c *PGClient) InsertPartitionTx(

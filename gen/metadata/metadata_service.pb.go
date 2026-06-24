@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v4.25.3
-// source: metadata_service.proto
+// source: proto/metadata_service.proto
 
 package metadata
 
@@ -51,11 +51,11 @@ func (x IsolationLevel) String() string {
 }
 
 func (IsolationLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_metadata_service_proto_enumTypes[0].Descriptor()
+	return file_proto_metadata_service_proto_enumTypes[0].Descriptor()
 }
 
 func (IsolationLevel) Type() protoreflect.EnumType {
-	return &file_metadata_service_proto_enumTypes[0]
+	return &file_proto_metadata_service_proto_enumTypes[0]
 }
 
 func (x IsolationLevel) Number() protoreflect.EnumNumber {
@@ -64,7 +64,7 @@ func (x IsolationLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use IsolationLevel.Descriptor instead.
 func (IsolationLevel) EnumDescriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{0}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{0}
 }
 
 type CreateTableRequest struct {
@@ -79,7 +79,7 @@ type CreateTableRequest struct {
 
 func (x *CreateTableRequest) Reset() {
 	*x = CreateTableRequest{}
-	mi := &file_metadata_service_proto_msgTypes[0]
+	mi := &file_proto_metadata_service_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -91,7 +91,7 @@ func (x *CreateTableRequest) String() string {
 func (*CreateTableRequest) ProtoMessage() {}
 
 func (x *CreateTableRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[0]
+	mi := &file_proto_metadata_service_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -104,7 +104,7 @@ func (x *CreateTableRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTableRequest.ProtoReflect.Descriptor instead.
 func (*CreateTableRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{0}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *CreateTableRequest) GetTableName() string {
@@ -145,7 +145,7 @@ type TableRequest struct {
 
 func (x *TableRequest) Reset() {
 	*x = TableRequest{}
-	mi := &file_metadata_service_proto_msgTypes[1]
+	mi := &file_proto_metadata_service_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -157,7 +157,7 @@ func (x *TableRequest) String() string {
 func (*TableRequest) ProtoMessage() {}
 
 func (x *TableRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[1]
+	mi := &file_proto_metadata_service_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -170,7 +170,7 @@ func (x *TableRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableRequest.ProtoReflect.Descriptor instead.
 func (*TableRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{1}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *TableRequest) GetTableName() string {
@@ -203,7 +203,7 @@ type TableMetadataResponse struct {
 
 func (x *TableMetadataResponse) Reset() {
 	*x = TableMetadataResponse{}
-	mi := &file_metadata_service_proto_msgTypes[2]
+	mi := &file_proto_metadata_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -215,7 +215,7 @@ func (x *TableMetadataResponse) String() string {
 func (*TableMetadataResponse) ProtoMessage() {}
 
 func (x *TableMetadataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[2]
+	mi := &file_proto_metadata_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -228,7 +228,7 @@ func (x *TableMetadataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableMetadataResponse.ProtoReflect.Descriptor instead.
 func (*TableMetadataResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{2}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *TableMetadataResponse) GetTableName() string {
@@ -302,7 +302,7 @@ type AlterTableRequest struct {
 
 func (x *AlterTableRequest) Reset() {
 	*x = AlterTableRequest{}
-	mi := &file_metadata_service_proto_msgTypes[3]
+	mi := &file_proto_metadata_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -314,7 +314,7 @@ func (x *AlterTableRequest) String() string {
 func (*AlterTableRequest) ProtoMessage() {}
 
 func (x *AlterTableRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[3]
+	mi := &file_proto_metadata_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -327,7 +327,7 @@ func (x *AlterTableRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AlterTableRequest.ProtoReflect.Descriptor instead.
 func (*AlterTableRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{3}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AlterTableRequest) GetTableName() string {
@@ -402,7 +402,7 @@ type RenameTable struct {
 
 func (x *RenameTable) Reset() {
 	*x = RenameTable{}
-	mi := &file_metadata_service_proto_msgTypes[4]
+	mi := &file_proto_metadata_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -414,7 +414,7 @@ func (x *RenameTable) String() string {
 func (*RenameTable) ProtoMessage() {}
 
 func (x *RenameTable) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[4]
+	mi := &file_proto_metadata_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -427,7 +427,7 @@ func (x *RenameTable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameTable.ProtoReflect.Descriptor instead.
 func (*RenameTable) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{4}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RenameTable) GetNewName() string {
@@ -447,7 +447,7 @@ type DropTableRequest struct {
 
 func (x *DropTableRequest) Reset() {
 	*x = DropTableRequest{}
-	mi := &file_metadata_service_proto_msgTypes[5]
+	mi := &file_proto_metadata_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -459,7 +459,7 @@ func (x *DropTableRequest) String() string {
 func (*DropTableRequest) ProtoMessage() {}
 
 func (x *DropTableRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[5]
+	mi := &file_proto_metadata_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -472,7 +472,7 @@ func (x *DropTableRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DropTableRequest.ProtoReflect.Descriptor instead.
 func (*DropTableRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{5}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DropTableRequest) GetTableName() string {
@@ -500,7 +500,7 @@ type ListTablesRequest struct {
 
 func (x *ListTablesRequest) Reset() {
 	*x = ListTablesRequest{}
-	mi := &file_metadata_service_proto_msgTypes[6]
+	mi := &file_proto_metadata_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -512,7 +512,7 @@ func (x *ListTablesRequest) String() string {
 func (*ListTablesRequest) ProtoMessage() {}
 
 func (x *ListTablesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[6]
+	mi := &file_proto_metadata_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -525,7 +525,7 @@ func (x *ListTablesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTablesRequest.ProtoReflect.Descriptor instead.
 func (*ListTablesRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{6}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListTablesRequest) GetNamespace() string {
@@ -559,7 +559,7 @@ type ListTablesResponse struct {
 
 func (x *ListTablesResponse) Reset() {
 	*x = ListTablesResponse{}
-	mi := &file_metadata_service_proto_msgTypes[7]
+	mi := &file_proto_metadata_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -571,7 +571,7 @@ func (x *ListTablesResponse) String() string {
 func (*ListTablesResponse) ProtoMessage() {}
 
 func (x *ListTablesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[7]
+	mi := &file_proto_metadata_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -584,7 +584,7 @@ func (x *ListTablesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTablesResponse.ProtoReflect.Descriptor instead.
 func (*ListTablesResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{7}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListTablesResponse) GetTables() []*TableSummary {
@@ -612,7 +612,7 @@ type TableSummary struct {
 
 func (x *TableSummary) Reset() {
 	*x = TableSummary{}
-	mi := &file_metadata_service_proto_msgTypes[8]
+	mi := &file_proto_metadata_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -624,7 +624,7 @@ func (x *TableSummary) String() string {
 func (*TableSummary) ProtoMessage() {}
 
 func (x *TableSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[8]
+	mi := &file_proto_metadata_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -637,7 +637,7 @@ func (x *TableSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableSummary.ProtoReflect.Descriptor instead.
 func (*TableSummary) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{8}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *TableSummary) GetTableName() string {
@@ -676,7 +676,7 @@ type PartitionInfo struct {
 
 func (x *PartitionInfo) Reset() {
 	*x = PartitionInfo{}
-	mi := &file_metadata_service_proto_msgTypes[9]
+	mi := &file_proto_metadata_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -688,7 +688,7 @@ func (x *PartitionInfo) String() string {
 func (*PartitionInfo) ProtoMessage() {}
 
 func (x *PartitionInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[9]
+	mi := &file_proto_metadata_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -701,7 +701,7 @@ func (x *PartitionInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionInfo.ProtoReflect.Descriptor instead.
 func (*PartitionInfo) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{9}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *PartitionInfo) GetPartitionKey() string {
@@ -766,7 +766,7 @@ type PartitionRequest struct {
 
 func (x *PartitionRequest) Reset() {
 	*x = PartitionRequest{}
-	mi := &file_metadata_service_proto_msgTypes[10]
+	mi := &file_proto_metadata_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -778,7 +778,7 @@ func (x *PartitionRequest) String() string {
 func (*PartitionRequest) ProtoMessage() {}
 
 func (x *PartitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[10]
+	mi := &file_proto_metadata_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -791,7 +791,7 @@ func (x *PartitionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionRequest.ProtoReflect.Descriptor instead.
 func (*PartitionRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{10}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *PartitionRequest) GetTableName() string {
@@ -840,7 +840,7 @@ type PartitionListResponse struct {
 
 func (x *PartitionListResponse) Reset() {
 	*x = PartitionListResponse{}
-	mi := &file_metadata_service_proto_msgTypes[11]
+	mi := &file_proto_metadata_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -852,7 +852,7 @@ func (x *PartitionListResponse) String() string {
 func (*PartitionListResponse) ProtoMessage() {}
 
 func (x *PartitionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[11]
+	mi := &file_proto_metadata_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -865,7 +865,7 @@ func (x *PartitionListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionListResponse.ProtoReflect.Descriptor instead.
 func (*PartitionListResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{11}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *PartitionListResponse) GetPartitions() []*PartitionInfo {
@@ -898,7 +898,7 @@ type PartitionStatsRequest struct {
 
 func (x *PartitionStatsRequest) Reset() {
 	*x = PartitionStatsRequest{}
-	mi := &file_metadata_service_proto_msgTypes[12]
+	mi := &file_proto_metadata_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -910,7 +910,7 @@ func (x *PartitionStatsRequest) String() string {
 func (*PartitionStatsRequest) ProtoMessage() {}
 
 func (x *PartitionStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[12]
+	mi := &file_proto_metadata_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -923,7 +923,7 @@ func (x *PartitionStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionStatsRequest.ProtoReflect.Descriptor instead.
 func (*PartitionStatsRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{12}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *PartitionStatsRequest) GetTableName() string {
@@ -945,7 +945,7 @@ type PartitionStatsResponse struct {
 
 func (x *PartitionStatsResponse) Reset() {
 	*x = PartitionStatsResponse{}
-	mi := &file_metadata_service_proto_msgTypes[13]
+	mi := &file_proto_metadata_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -957,7 +957,7 @@ func (x *PartitionStatsResponse) String() string {
 func (*PartitionStatsResponse) ProtoMessage() {}
 
 func (x *PartitionStatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[13]
+	mi := &file_proto_metadata_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -970,7 +970,7 @@ func (x *PartitionStatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionStatsResponse.ProtoReflect.Descriptor instead.
 func (*PartitionStatsResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{13}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PartitionStatsResponse) GetTotalPartitions() int64 {
@@ -1014,7 +1014,7 @@ type SnapshotRequest struct {
 
 func (x *SnapshotRequest) Reset() {
 	*x = SnapshotRequest{}
-	mi := &file_metadata_service_proto_msgTypes[14]
+	mi := &file_proto_metadata_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1026,7 +1026,7 @@ func (x *SnapshotRequest) String() string {
 func (*SnapshotRequest) ProtoMessage() {}
 
 func (x *SnapshotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[14]
+	mi := &file_proto_metadata_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1039,7 +1039,7 @@ func (x *SnapshotRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapshotRequest.ProtoReflect.Descriptor instead.
 func (*SnapshotRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{14}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SnapshotRequest) GetTableName() string {
@@ -1088,7 +1088,7 @@ type SnapshotResponse struct {
 
 func (x *SnapshotResponse) Reset() {
 	*x = SnapshotResponse{}
-	mi := &file_metadata_service_proto_msgTypes[15]
+	mi := &file_proto_metadata_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1100,7 +1100,7 @@ func (x *SnapshotResponse) String() string {
 func (*SnapshotResponse) ProtoMessage() {}
 
 func (x *SnapshotResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[15]
+	mi := &file_proto_metadata_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1113,7 +1113,7 @@ func (x *SnapshotResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapshotResponse.ProtoReflect.Descriptor instead.
 func (*SnapshotResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{15}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *SnapshotResponse) GetSnapshotId() uint64 {
@@ -1147,7 +1147,7 @@ type GetSnapshotRequest struct {
 
 func (x *GetSnapshotRequest) Reset() {
 	*x = GetSnapshotRequest{}
-	mi := &file_metadata_service_proto_msgTypes[16]
+	mi := &file_proto_metadata_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1159,7 +1159,7 @@ func (x *GetSnapshotRequest) String() string {
 func (*GetSnapshotRequest) ProtoMessage() {}
 
 func (x *GetSnapshotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[16]
+	mi := &file_proto_metadata_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1172,7 +1172,7 @@ func (x *GetSnapshotRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSnapshotRequest.ProtoReflect.Descriptor instead.
 func (*GetSnapshotRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{16}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetSnapshotRequest) GetTableName() string {
@@ -1203,7 +1203,7 @@ type SnapshotDetail struct {
 
 func (x *SnapshotDetail) Reset() {
 	*x = SnapshotDetail{}
-	mi := &file_metadata_service_proto_msgTypes[17]
+	mi := &file_proto_metadata_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1215,7 +1215,7 @@ func (x *SnapshotDetail) String() string {
 func (*SnapshotDetail) ProtoMessage() {}
 
 func (x *SnapshotDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[17]
+	mi := &file_proto_metadata_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1228,7 +1228,7 @@ func (x *SnapshotDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapshotDetail.ProtoReflect.Descriptor instead.
 func (*SnapshotDetail) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{17}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *SnapshotDetail) GetSnapshotId() uint64 {
@@ -1283,7 +1283,7 @@ type ListSnapshotsRequest struct {
 
 func (x *ListSnapshotsRequest) Reset() {
 	*x = ListSnapshotsRequest{}
-	mi := &file_metadata_service_proto_msgTypes[18]
+	mi := &file_proto_metadata_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1295,7 +1295,7 @@ func (x *ListSnapshotsRequest) String() string {
 func (*ListSnapshotsRequest) ProtoMessage() {}
 
 func (x *ListSnapshotsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[18]
+	mi := &file_proto_metadata_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1308,7 +1308,7 @@ func (x *ListSnapshotsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSnapshotsRequest.ProtoReflect.Descriptor instead.
 func (*ListSnapshotsRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{18}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ListSnapshotsRequest) GetTableName() string {
@@ -1334,7 +1334,7 @@ type ListSnapshotsResponse struct {
 
 func (x *ListSnapshotsResponse) Reset() {
 	*x = ListSnapshotsResponse{}
-	mi := &file_metadata_service_proto_msgTypes[19]
+	mi := &file_proto_metadata_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1346,7 +1346,7 @@ func (x *ListSnapshotsResponse) String() string {
 func (*ListSnapshotsResponse) ProtoMessage() {}
 
 func (x *ListSnapshotsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[19]
+	mi := &file_proto_metadata_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1359,7 +1359,7 @@ func (x *ListSnapshotsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSnapshotsResponse.ProtoReflect.Descriptor instead.
 func (*ListSnapshotsResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{19}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ListSnapshotsResponse) GetSnapshots() []*SnapshotDetail {
@@ -1380,7 +1380,7 @@ type TransactionRequest struct {
 
 func (x *TransactionRequest) Reset() {
 	*x = TransactionRequest{}
-	mi := &file_metadata_service_proto_msgTypes[20]
+	mi := &file_proto_metadata_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1392,7 +1392,7 @@ func (x *TransactionRequest) String() string {
 func (*TransactionRequest) ProtoMessage() {}
 
 func (x *TransactionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[20]
+	mi := &file_proto_metadata_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1405,7 +1405,7 @@ func (x *TransactionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransactionRequest.ProtoReflect.Descriptor instead.
 func (*TransactionRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{20}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *TransactionRequest) GetClientId() string {
@@ -1439,7 +1439,7 @@ type TransactionResponse struct {
 
 func (x *TransactionResponse) Reset() {
 	*x = TransactionResponse{}
-	mi := &file_metadata_service_proto_msgTypes[21]
+	mi := &file_proto_metadata_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1451,7 +1451,7 @@ func (x *TransactionResponse) String() string {
 func (*TransactionResponse) ProtoMessage() {}
 
 func (x *TransactionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[21]
+	mi := &file_proto_metadata_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1464,7 +1464,7 @@ func (x *TransactionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransactionResponse.ProtoReflect.Descriptor instead.
 func (*TransactionResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{21}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *TransactionResponse) GetTxnId() uint64 {
@@ -1490,7 +1490,7 @@ type CommitRequest struct {
 
 func (x *CommitRequest) Reset() {
 	*x = CommitRequest{}
-	mi := &file_metadata_service_proto_msgTypes[22]
+	mi := &file_proto_metadata_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1502,7 +1502,7 @@ func (x *CommitRequest) String() string {
 func (*CommitRequest) ProtoMessage() {}
 
 func (x *CommitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[22]
+	mi := &file_proto_metadata_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1515,7 +1515,7 @@ func (x *CommitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitRequest.ProtoReflect.Descriptor instead.
 func (*CommitRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{22}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *CommitRequest) GetTxnId() uint64 {
@@ -1534,7 +1534,7 @@ type AbortRequest struct {
 
 func (x *AbortRequest) Reset() {
 	*x = AbortRequest{}
-	mi := &file_metadata_service_proto_msgTypes[23]
+	mi := &file_proto_metadata_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1546,7 +1546,7 @@ func (x *AbortRequest) String() string {
 func (*AbortRequest) ProtoMessage() {}
 
 func (x *AbortRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[23]
+	mi := &file_proto_metadata_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1559,7 +1559,7 @@ func (x *AbortRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AbortRequest.ProtoReflect.Descriptor instead.
 func (*AbortRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{23}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *AbortRequest) GetTxnId() uint64 {
@@ -1579,7 +1579,7 @@ type OperationResponse struct {
 
 func (x *OperationResponse) Reset() {
 	*x = OperationResponse{}
-	mi := &file_metadata_service_proto_msgTypes[24]
+	mi := &file_proto_metadata_service_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1591,7 +1591,7 @@ func (x *OperationResponse) String() string {
 func (*OperationResponse) ProtoMessage() {}
 
 func (x *OperationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[24]
+	mi := &file_proto_metadata_service_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1604,7 +1604,7 @@ func (x *OperationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperationResponse.ProtoReflect.Descriptor instead.
 func (*OperationResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{24}
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *OperationResponse) GetSuccess() bool {
@@ -1621,11 +1621,383 @@ func (x *OperationResponse) GetErrorMsg() string {
 	return ""
 }
 
-var File_metadata_service_proto protoreflect.FileDescriptor
+type GetManifestListRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TableName     string                 `protobuf:"bytes,1,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
+	SnapshotId    uint64                 `protobuf:"varint,2,opt,name=snapshot_id,json=snapshotId,proto3" json:"snapshot_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
 
-const file_metadata_service_proto_rawDesc = "" +
+func (x *GetManifestListRequest) Reset() {
+	*x = GetManifestListRequest{}
+	mi := &file_proto_metadata_service_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetManifestListRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetManifestListRequest) ProtoMessage() {}
+
+func (x *GetManifestListRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metadata_service_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetManifestListRequest.ProtoReflect.Descriptor instead.
+func (*GetManifestListRequest) Descriptor() ([]byte, []int) {
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *GetManifestListRequest) GetTableName() string {
+	if x != nil {
+		return x.TableName
+	}
+	return ""
+}
+
+func (x *GetManifestListRequest) GetSnapshotId() uint64 {
+	if x != nil {
+		return x.SnapshotId
+	}
+	return 0
+}
+
+type ManifestFileSummary struct {
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	ManifestFileId         int64                  `protobuf:"varint,1,opt,name=manifest_file_id,json=manifestFileId,proto3" json:"manifest_file_id,omitempty"`
+	ManifestPath           string                 `protobuf:"bytes,2,opt,name=manifest_path,json=manifestPath,proto3" json:"manifest_path,omitempty"`
+	PartitionSpecId        int32                  `protobuf:"varint,3,opt,name=partition_spec_id,json=partitionSpecId,proto3" json:"partition_spec_id,omitempty"`
+	AddedFilesCount        int32                  `protobuf:"varint,4,opt,name=added_files_count,json=addedFilesCount,proto3" json:"added_files_count,omitempty"`
+	DeletedFilesCount      int32                  `protobuf:"varint,5,opt,name=deleted_files_count,json=deletedFilesCount,proto3" json:"deleted_files_count,omitempty"`
+	AddedRowsCount         int64                  `protobuf:"varint,6,opt,name=added_rows_count,json=addedRowsCount,proto3" json:"added_rows_count,omitempty"`
+	DeletedRowsCount       int64                  `protobuf:"varint,7,opt,name=deleted_rows_count,json=deletedRowsCount,proto3" json:"deleted_rows_count,omitempty"`
+	PartitionSummariesJson string                 `protobuf:"bytes,8,opt,name=partition_summaries_json,json=partitionSummariesJson,proto3" json:"partition_summaries_json,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ManifestFileSummary) Reset() {
+	*x = ManifestFileSummary{}
+	mi := &file_proto_metadata_service_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManifestFileSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManifestFileSummary) ProtoMessage() {}
+
+func (x *ManifestFileSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metadata_service_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManifestFileSummary.ProtoReflect.Descriptor instead.
+func (*ManifestFileSummary) Descriptor() ([]byte, []int) {
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *ManifestFileSummary) GetManifestFileId() int64 {
+	if x != nil {
+		return x.ManifestFileId
+	}
+	return 0
+}
+
+func (x *ManifestFileSummary) GetManifestPath() string {
+	if x != nil {
+		return x.ManifestPath
+	}
+	return ""
+}
+
+func (x *ManifestFileSummary) GetPartitionSpecId() int32 {
+	if x != nil {
+		return x.PartitionSpecId
+	}
+	return 0
+}
+
+func (x *ManifestFileSummary) GetAddedFilesCount() int32 {
+	if x != nil {
+		return x.AddedFilesCount
+	}
+	return 0
+}
+
+func (x *ManifestFileSummary) GetDeletedFilesCount() int32 {
+	if x != nil {
+		return x.DeletedFilesCount
+	}
+	return 0
+}
+
+func (x *ManifestFileSummary) GetAddedRowsCount() int64 {
+	if x != nil {
+		return x.AddedRowsCount
+	}
+	return 0
+}
+
+func (x *ManifestFileSummary) GetDeletedRowsCount() int64 {
+	if x != nil {
+		return x.DeletedRowsCount
+	}
+	return 0
+}
+
+func (x *ManifestFileSummary) GetPartitionSummariesJson() string {
+	if x != nil {
+		return x.PartitionSummariesJson
+	}
+	return ""
+}
+
+type ManifestListResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SnapshotId    uint64                 `protobuf:"varint,1,opt,name=snapshot_id,json=snapshotId,proto3" json:"snapshot_id,omitempty"`
+	ManifestCount int32                  `protobuf:"varint,2,opt,name=manifest_count,json=manifestCount,proto3" json:"manifest_count,omitempty"`
+	Manifests     []*ManifestFileSummary `protobuf:"bytes,3,rep,name=manifests,proto3" json:"manifests,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ManifestListResponse) Reset() {
+	*x = ManifestListResponse{}
+	mi := &file_proto_metadata_service_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManifestListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManifestListResponse) ProtoMessage() {}
+
+func (x *ManifestListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metadata_service_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManifestListResponse.ProtoReflect.Descriptor instead.
+func (*ManifestListResponse) Descriptor() ([]byte, []int) {
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *ManifestListResponse) GetSnapshotId() uint64 {
+	if x != nil {
+		return x.SnapshotId
+	}
+	return 0
+}
+
+func (x *ManifestListResponse) GetManifestCount() int32 {
+	if x != nil {
+		return x.ManifestCount
+	}
+	return 0
+}
+
+func (x *ManifestListResponse) GetManifests() []*ManifestFileSummary {
+	if x != nil {
+		return x.Manifests
+	}
+	return nil
+}
+
+type GetManifestRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	TableName      string                 `protobuf:"bytes,1,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
+	ManifestFileId int64                  `protobuf:"varint,2,opt,name=manifest_file_id,json=manifestFileId,proto3" json:"manifest_file_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GetManifestRequest) Reset() {
+	*x = GetManifestRequest{}
+	mi := &file_proto_metadata_service_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetManifestRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetManifestRequest) ProtoMessage() {}
+
+func (x *GetManifestRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metadata_service_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetManifestRequest.ProtoReflect.Descriptor instead.
+func (*GetManifestRequest) Descriptor() ([]byte, []int) {
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *GetManifestRequest) GetTableName() string {
+	if x != nil {
+		return x.TableName
+	}
+	return ""
+}
+
+func (x *GetManifestRequest) GetManifestFileId() int64 {
+	if x != nil {
+		return x.ManifestFileId
+	}
+	return 0
+}
+
+type ManifestFileDetail struct {
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	ManifestFileId         int64                  `protobuf:"varint,1,opt,name=manifest_file_id,json=manifestFileId,proto3" json:"manifest_file_id,omitempty"`
+	SnapshotId             uint64                 `protobuf:"varint,2,opt,name=snapshot_id,json=snapshotId,proto3" json:"snapshot_id,omitempty"`
+	ManifestPath           string                 `protobuf:"bytes,3,opt,name=manifest_path,json=manifestPath,proto3" json:"manifest_path,omitempty"`
+	PartitionSpecId        int32                  `protobuf:"varint,4,opt,name=partition_spec_id,json=partitionSpecId,proto3" json:"partition_spec_id,omitempty"`
+	AddedFilesCount        int32                  `protobuf:"varint,5,opt,name=added_files_count,json=addedFilesCount,proto3" json:"added_files_count,omitempty"`
+	DeletedFilesCount      int32                  `protobuf:"varint,6,opt,name=deleted_files_count,json=deletedFilesCount,proto3" json:"deleted_files_count,omitempty"`
+	AddedRowsCount         int64                  `protobuf:"varint,7,opt,name=added_rows_count,json=addedRowsCount,proto3" json:"added_rows_count,omitempty"`
+	DeletedRowsCount       int64                  `protobuf:"varint,8,opt,name=deleted_rows_count,json=deletedRowsCount,proto3" json:"deleted_rows_count,omitempty"`
+	PartitionSummariesJson string                 `protobuf:"bytes,9,opt,name=partition_summaries_json,json=partitionSummariesJson,proto3" json:"partition_summaries_json,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ManifestFileDetail) Reset() {
+	*x = ManifestFileDetail{}
+	mi := &file_proto_metadata_service_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ManifestFileDetail) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManifestFileDetail) ProtoMessage() {}
+
+func (x *ManifestFileDetail) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_metadata_service_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManifestFileDetail.ProtoReflect.Descriptor instead.
+func (*ManifestFileDetail) Descriptor() ([]byte, []int) {
+	return file_proto_metadata_service_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *ManifestFileDetail) GetManifestFileId() int64 {
+	if x != nil {
+		return x.ManifestFileId
+	}
+	return 0
+}
+
+func (x *ManifestFileDetail) GetSnapshotId() uint64 {
+	if x != nil {
+		return x.SnapshotId
+	}
+	return 0
+}
+
+func (x *ManifestFileDetail) GetManifestPath() string {
+	if x != nil {
+		return x.ManifestPath
+	}
+	return ""
+}
+
+func (x *ManifestFileDetail) GetPartitionSpecId() int32 {
+	if x != nil {
+		return x.PartitionSpecId
+	}
+	return 0
+}
+
+func (x *ManifestFileDetail) GetAddedFilesCount() int32 {
+	if x != nil {
+		return x.AddedFilesCount
+	}
+	return 0
+}
+
+func (x *ManifestFileDetail) GetDeletedFilesCount() int32 {
+	if x != nil {
+		return x.DeletedFilesCount
+	}
+	return 0
+}
+
+func (x *ManifestFileDetail) GetAddedRowsCount() int64 {
+	if x != nil {
+		return x.AddedRowsCount
+	}
+	return 0
+}
+
+func (x *ManifestFileDetail) GetDeletedRowsCount() int64 {
+	if x != nil {
+		return x.DeletedRowsCount
+	}
+	return 0
+}
+
+func (x *ManifestFileDetail) GetPartitionSummariesJson() string {
+	if x != nil {
+		return x.PartitionSummariesJson
+	}
+	return ""
+}
+
+var File_proto_metadata_service_proto protoreflect.FileDescriptor
+
+const file_proto_metadata_service_proto_rawDesc = "" +
 	"\n" +
-	"\x16metadata_service.proto\x12\bmetadata\"\x88\x02\n" +
+	"\x1cproto/metadata_service.proto\x12\bmetadata\"\x88\x02\n" +
 	"\x12CreateTableRequest\x12\x1d\n" +
 	"\n" +
 	"table_name\x18\x01 \x01(\tR\ttableName\x12\x1f\n" +
@@ -1774,10 +2146,44 @@ const file_metadata_service_proto_rawDesc = "" +
 	"\x06txn_id\x18\x01 \x01(\x04R\x05txnId\"J\n" +
 	"\x11OperationResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x1b\n" +
-	"\terror_msg\x18\x02 \x01(\tR\berrorMsg*2\n" +
+	"\terror_msg\x18\x02 \x01(\tR\berrorMsg\"X\n" +
+	"\x16GetManifestListRequest\x12\x1d\n" +
+	"\n" +
+	"table_name\x18\x01 \x01(\tR\ttableName\x12\x1f\n" +
+	"\vsnapshot_id\x18\x02 \x01(\x04R\n" +
+	"snapshotId\"\xfe\x02\n" +
+	"\x13ManifestFileSummary\x12(\n" +
+	"\x10manifest_file_id\x18\x01 \x01(\x03R\x0emanifestFileId\x12#\n" +
+	"\rmanifest_path\x18\x02 \x01(\tR\fmanifestPath\x12*\n" +
+	"\x11partition_spec_id\x18\x03 \x01(\x05R\x0fpartitionSpecId\x12*\n" +
+	"\x11added_files_count\x18\x04 \x01(\x05R\x0faddedFilesCount\x12.\n" +
+	"\x13deleted_files_count\x18\x05 \x01(\x05R\x11deletedFilesCount\x12(\n" +
+	"\x10added_rows_count\x18\x06 \x01(\x03R\x0eaddedRowsCount\x12,\n" +
+	"\x12deleted_rows_count\x18\a \x01(\x03R\x10deletedRowsCount\x128\n" +
+	"\x18partition_summaries_json\x18\b \x01(\tR\x16partitionSummariesJson\"\x9b\x01\n" +
+	"\x14ManifestListResponse\x12\x1f\n" +
+	"\vsnapshot_id\x18\x01 \x01(\x04R\n" +
+	"snapshotId\x12%\n" +
+	"\x0emanifest_count\x18\x02 \x01(\x05R\rmanifestCount\x12;\n" +
+	"\tmanifests\x18\x03 \x03(\v2\x1d.metadata.ManifestFileSummaryR\tmanifests\"]\n" +
+	"\x12GetManifestRequest\x12\x1d\n" +
+	"\n" +
+	"table_name\x18\x01 \x01(\tR\ttableName\x12(\n" +
+	"\x10manifest_file_id\x18\x02 \x01(\x03R\x0emanifestFileId\"\x9e\x03\n" +
+	"\x12ManifestFileDetail\x12(\n" +
+	"\x10manifest_file_id\x18\x01 \x01(\x03R\x0emanifestFileId\x12\x1f\n" +
+	"\vsnapshot_id\x18\x02 \x01(\x04R\n" +
+	"snapshotId\x12#\n" +
+	"\rmanifest_path\x18\x03 \x01(\tR\fmanifestPath\x12*\n" +
+	"\x11partition_spec_id\x18\x04 \x01(\x05R\x0fpartitionSpecId\x12*\n" +
+	"\x11added_files_count\x18\x05 \x01(\x05R\x0faddedFilesCount\x12.\n" +
+	"\x13deleted_files_count\x18\x06 \x01(\x05R\x11deletedFilesCount\x12(\n" +
+	"\x10added_rows_count\x18\a \x01(\x03R\x0eaddedRowsCount\x12,\n" +
+	"\x12deleted_rows_count\x18\b \x01(\x03R\x10deletedRowsCount\x128\n" +
+	"\x18partition_summaries_json\x18\t \x01(\tR\x16partitionSummariesJson*2\n" +
 	"\x0eIsolationLevel\x12\f\n" +
 	"\bSNAPSHOT\x10\x00\x12\x12\n" +
-	"\x0eREAD_COMMITTED\x10\x012\xec\a\n" +
+	"\x0eREAD_COMMITTED\x10\x012\x8c\t\n" +
 	"\x0fMetadataService\x12H\n" +
 	"\vCreateTable\x12\x1c.metadata.CreateTableRequest\x1a\x1b.metadata.OperationResponse\x12K\n" +
 	"\x10GetTableMetadata\x12\x16.metadata.TableRequest\x1a\x1f.metadata.TableMetadataResponse\x12F\n" +
@@ -1793,23 +2199,25 @@ const file_metadata_service_proto_rawDesc = "" +
 	"\rListSnapshots\x12\x1e.metadata.ListSnapshotsRequest\x1a\x1f.metadata.ListSnapshotsResponse\x12O\n" +
 	"\x10BeginTransaction\x12\x1c.metadata.TransactionRequest\x1a\x1d.metadata.TransactionResponse\x12I\n" +
 	"\x11CommitTransaction\x12\x17.metadata.CommitRequest\x1a\x1b.metadata.OperationResponse\x12G\n" +
-	"\x10AbortTransaction\x12\x16.metadata.AbortRequest\x1a\x1b.metadata.OperationResponseB4Z2github.com/Athul0491/IceCore/gen/metadata;metadatab\x06proto3"
+	"\x10AbortTransaction\x12\x16.metadata.AbortRequest\x1a\x1b.metadata.OperationResponse\x12S\n" +
+	"\x0fGetManifestList\x12 .metadata.GetManifestListRequest\x1a\x1e.metadata.ManifestListResponse\x12I\n" +
+	"\vGetManifest\x12\x1c.metadata.GetManifestRequest\x1a\x1c.metadata.ManifestFileDetailB4Z2github.com/Athul0491/IceCore/gen/metadata;metadatab\x06proto3"
 
 var (
-	file_metadata_service_proto_rawDescOnce sync.Once
-	file_metadata_service_proto_rawDescData []byte
+	file_proto_metadata_service_proto_rawDescOnce sync.Once
+	file_proto_metadata_service_proto_rawDescData []byte
 )
 
-func file_metadata_service_proto_rawDescGZIP() []byte {
-	file_metadata_service_proto_rawDescOnce.Do(func() {
-		file_metadata_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_metadata_service_proto_rawDesc), len(file_metadata_service_proto_rawDesc)))
+func file_proto_metadata_service_proto_rawDescGZIP() []byte {
+	file_proto_metadata_service_proto_rawDescOnce.Do(func() {
+		file_proto_metadata_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_metadata_service_proto_rawDesc), len(file_proto_metadata_service_proto_rawDesc)))
 	})
-	return file_metadata_service_proto_rawDescData
+	return file_proto_metadata_service_proto_rawDescData
 }
 
-var file_metadata_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_metadata_service_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
-var file_metadata_service_proto_goTypes = []any{
+var file_proto_metadata_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_proto_metadata_service_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_proto_metadata_service_proto_goTypes = []any{
 	(IsolationLevel)(0),            // 0: metadata.IsolationLevel
 	(*CreateTableRequest)(nil),     // 1: metadata.CreateTableRequest
 	(*TableRequest)(nil),           // 2: metadata.TableRequest
@@ -1836,60 +2244,70 @@ var file_metadata_service_proto_goTypes = []any{
 	(*CommitRequest)(nil),          // 23: metadata.CommitRequest
 	(*AbortRequest)(nil),           // 24: metadata.AbortRequest
 	(*OperationResponse)(nil),      // 25: metadata.OperationResponse
-	nil,                            // 26: metadata.CreateTableRequest.PropertiesEntry
-	nil,                            // 27: metadata.TableMetadataResponse.PropertiesEntry
-	nil,                            // 28: metadata.PartitionInfo.ColumnStatsEntry
+	(*GetManifestListRequest)(nil), // 26: metadata.GetManifestListRequest
+	(*ManifestFileSummary)(nil),    // 27: metadata.ManifestFileSummary
+	(*ManifestListResponse)(nil),   // 28: metadata.ManifestListResponse
+	(*GetManifestRequest)(nil),     // 29: metadata.GetManifestRequest
+	(*ManifestFileDetail)(nil),     // 30: metadata.ManifestFileDetail
+	nil,                            // 31: metadata.CreateTableRequest.PropertiesEntry
+	nil,                            // 32: metadata.TableMetadataResponse.PropertiesEntry
+	nil,                            // 33: metadata.PartitionInfo.ColumnStatsEntry
 }
-var file_metadata_service_proto_depIdxs = []int32{
-	26, // 0: metadata.CreateTableRequest.properties:type_name -> metadata.CreateTableRequest.PropertiesEntry
+var file_proto_metadata_service_proto_depIdxs = []int32{
+	31, // 0: metadata.CreateTableRequest.properties:type_name -> metadata.CreateTableRequest.PropertiesEntry
 	10, // 1: metadata.TableMetadataResponse.partitions:type_name -> metadata.PartitionInfo
-	27, // 2: metadata.TableMetadataResponse.properties:type_name -> metadata.TableMetadataResponse.PropertiesEntry
+	32, // 2: metadata.TableMetadataResponse.properties:type_name -> metadata.TableMetadataResponse.PropertiesEntry
 	5,  // 3: metadata.AlterTableRequest.rename:type_name -> metadata.RenameTable
 	9,  // 4: metadata.ListTablesResponse.tables:type_name -> metadata.TableSummary
-	28, // 5: metadata.PartitionInfo.column_stats:type_name -> metadata.PartitionInfo.ColumnStatsEntry
+	33, // 5: metadata.PartitionInfo.column_stats:type_name -> metadata.PartitionInfo.ColumnStatsEntry
 	10, // 6: metadata.PartitionListResponse.partitions:type_name -> metadata.PartitionInfo
 	10, // 7: metadata.SnapshotRequest.new_partitions:type_name -> metadata.PartitionInfo
 	18, // 8: metadata.ListSnapshotsResponse.snapshots:type_name -> metadata.SnapshotDetail
 	0,  // 9: metadata.TransactionRequest.isolation:type_name -> metadata.IsolationLevel
-	1,  // 10: metadata.MetadataService.CreateTable:input_type -> metadata.CreateTableRequest
-	2,  // 11: metadata.MetadataService.GetTableMetadata:input_type -> metadata.TableRequest
-	4,  // 12: metadata.MetadataService.AlterTable:input_type -> metadata.AlterTableRequest
-	6,  // 13: metadata.MetadataService.DropTable:input_type -> metadata.DropTableRequest
-	7,  // 14: metadata.MetadataService.ListTables:input_type -> metadata.ListTablesRequest
-	11, // 15: metadata.MetadataService.GetPartitions:input_type -> metadata.PartitionRequest
-	13, // 16: metadata.MetadataService.GetPartitionStats:input_type -> metadata.PartitionStatsRequest
-	15, // 17: metadata.MetadataService.CommitSnapshot:input_type -> metadata.SnapshotRequest
-	17, // 18: metadata.MetadataService.GetSnapshot:input_type -> metadata.GetSnapshotRequest
-	19, // 19: metadata.MetadataService.ListSnapshots:input_type -> metadata.ListSnapshotsRequest
-	21, // 20: metadata.MetadataService.BeginTransaction:input_type -> metadata.TransactionRequest
-	23, // 21: metadata.MetadataService.CommitTransaction:input_type -> metadata.CommitRequest
-	24, // 22: metadata.MetadataService.AbortTransaction:input_type -> metadata.AbortRequest
-	25, // 23: metadata.MetadataService.CreateTable:output_type -> metadata.OperationResponse
-	3,  // 24: metadata.MetadataService.GetTableMetadata:output_type -> metadata.TableMetadataResponse
-	25, // 25: metadata.MetadataService.AlterTable:output_type -> metadata.OperationResponse
-	25, // 26: metadata.MetadataService.DropTable:output_type -> metadata.OperationResponse
-	8,  // 27: metadata.MetadataService.ListTables:output_type -> metadata.ListTablesResponse
-	12, // 28: metadata.MetadataService.GetPartitions:output_type -> metadata.PartitionListResponse
-	14, // 29: metadata.MetadataService.GetPartitionStats:output_type -> metadata.PartitionStatsResponse
-	16, // 30: metadata.MetadataService.CommitSnapshot:output_type -> metadata.SnapshotResponse
-	18, // 31: metadata.MetadataService.GetSnapshot:output_type -> metadata.SnapshotDetail
-	20, // 32: metadata.MetadataService.ListSnapshots:output_type -> metadata.ListSnapshotsResponse
-	22, // 33: metadata.MetadataService.BeginTransaction:output_type -> metadata.TransactionResponse
-	25, // 34: metadata.MetadataService.CommitTransaction:output_type -> metadata.OperationResponse
-	25, // 35: metadata.MetadataService.AbortTransaction:output_type -> metadata.OperationResponse
-	23, // [23:36] is the sub-list for method output_type
-	10, // [10:23] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	27, // 10: metadata.ManifestListResponse.manifests:type_name -> metadata.ManifestFileSummary
+	1,  // 11: metadata.MetadataService.CreateTable:input_type -> metadata.CreateTableRequest
+	2,  // 12: metadata.MetadataService.GetTableMetadata:input_type -> metadata.TableRequest
+	4,  // 13: metadata.MetadataService.AlterTable:input_type -> metadata.AlterTableRequest
+	6,  // 14: metadata.MetadataService.DropTable:input_type -> metadata.DropTableRequest
+	7,  // 15: metadata.MetadataService.ListTables:input_type -> metadata.ListTablesRequest
+	11, // 16: metadata.MetadataService.GetPartitions:input_type -> metadata.PartitionRequest
+	13, // 17: metadata.MetadataService.GetPartitionStats:input_type -> metadata.PartitionStatsRequest
+	15, // 18: metadata.MetadataService.CommitSnapshot:input_type -> metadata.SnapshotRequest
+	17, // 19: metadata.MetadataService.GetSnapshot:input_type -> metadata.GetSnapshotRequest
+	19, // 20: metadata.MetadataService.ListSnapshots:input_type -> metadata.ListSnapshotsRequest
+	21, // 21: metadata.MetadataService.BeginTransaction:input_type -> metadata.TransactionRequest
+	23, // 22: metadata.MetadataService.CommitTransaction:input_type -> metadata.CommitRequest
+	24, // 23: metadata.MetadataService.AbortTransaction:input_type -> metadata.AbortRequest
+	26, // 24: metadata.MetadataService.GetManifestList:input_type -> metadata.GetManifestListRequest
+	29, // 25: metadata.MetadataService.GetManifest:input_type -> metadata.GetManifestRequest
+	25, // 26: metadata.MetadataService.CreateTable:output_type -> metadata.OperationResponse
+	3,  // 27: metadata.MetadataService.GetTableMetadata:output_type -> metadata.TableMetadataResponse
+	25, // 28: metadata.MetadataService.AlterTable:output_type -> metadata.OperationResponse
+	25, // 29: metadata.MetadataService.DropTable:output_type -> metadata.OperationResponse
+	8,  // 30: metadata.MetadataService.ListTables:output_type -> metadata.ListTablesResponse
+	12, // 31: metadata.MetadataService.GetPartitions:output_type -> metadata.PartitionListResponse
+	14, // 32: metadata.MetadataService.GetPartitionStats:output_type -> metadata.PartitionStatsResponse
+	16, // 33: metadata.MetadataService.CommitSnapshot:output_type -> metadata.SnapshotResponse
+	18, // 34: metadata.MetadataService.GetSnapshot:output_type -> metadata.SnapshotDetail
+	20, // 35: metadata.MetadataService.ListSnapshots:output_type -> metadata.ListSnapshotsResponse
+	22, // 36: metadata.MetadataService.BeginTransaction:output_type -> metadata.TransactionResponse
+	25, // 37: metadata.MetadataService.CommitTransaction:output_type -> metadata.OperationResponse
+	25, // 38: metadata.MetadataService.AbortTransaction:output_type -> metadata.OperationResponse
+	28, // 39: metadata.MetadataService.GetManifestList:output_type -> metadata.ManifestListResponse
+	30, // 40: metadata.MetadataService.GetManifest:output_type -> metadata.ManifestFileDetail
+	26, // [26:41] is the sub-list for method output_type
+	11, // [11:26] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
-func init() { file_metadata_service_proto_init() }
-func file_metadata_service_proto_init() {
-	if File_metadata_service_proto != nil {
+func init() { file_proto_metadata_service_proto_init() }
+func file_proto_metadata_service_proto_init() {
+	if File_proto_metadata_service_proto != nil {
 		return
 	}
-	file_metadata_service_proto_msgTypes[3].OneofWrappers = []any{
+	file_proto_metadata_service_proto_msgTypes[3].OneofWrappers = []any{
 		(*AlterTableRequest_NewSchemaJson)(nil),
 		(*AlterTableRequest_NewPartitionSpec)(nil),
 		(*AlterTableRequest_Rename)(nil),
@@ -1898,18 +2316,18 @@ func file_metadata_service_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_metadata_service_proto_rawDesc), len(file_metadata_service_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_metadata_service_proto_rawDesc), len(file_proto_metadata_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   28,
+			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_metadata_service_proto_goTypes,
-		DependencyIndexes: file_metadata_service_proto_depIdxs,
-		EnumInfos:         file_metadata_service_proto_enumTypes,
-		MessageInfos:      file_metadata_service_proto_msgTypes,
+		GoTypes:           file_proto_metadata_service_proto_goTypes,
+		DependencyIndexes: file_proto_metadata_service_proto_depIdxs,
+		EnumInfos:         file_proto_metadata_service_proto_enumTypes,
+		MessageInfos:      file_proto_metadata_service_proto_msgTypes,
 	}.Build()
-	File_metadata_service_proto = out.File
-	file_metadata_service_proto_goTypes = nil
-	file_metadata_service_proto_depIdxs = nil
+	File_proto_metadata_service_proto = out.File
+	file_proto_metadata_service_proto_goTypes = nil
+	file_proto_metadata_service_proto_depIdxs = nil
 }

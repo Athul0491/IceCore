@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 	"strings"
 	"testing"
@@ -763,5 +764,227 @@ func TestCommitTransactionUnknownTxnFails(t *testing.T) {
 	}
 	if resp.GetErrorMsg() == "" {
 		t.Fatalf("expected error message for unknown txn")
+	}
+}
+
+func TestGetManifestListAfterCommit(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+	snap := commitSnapshot(t, ctx, client, "events", 0,
+		makePartition("month=2025-01"),
+		makePartition("month=2025-02"),
+	)
+	if !snap.GetSuccess() {
+		t.Fatalf("CommitSnapshot failed: %s", snap.GetErrorMsg())
+	}
+
+	resp, err := client.GetManifestList(ctx, &metadata.GetManifestListRequest{
+		TableName:  "events",
+		SnapshotId: snap.GetSnapshotId(),
+	})
+	if err != nil {
+		t.Fatalf("GetManifestList failed: %v", err)
+	}
+	if resp.GetManifestCount() < 1 {
+		t.Fatalf("expected at least 1 manifest, got %d", resp.GetManifestCount())
+	}
+	if len(resp.GetManifests()) == 0 {
+		t.Fatalf("expected non-empty manifests list")
+	}
+
+	var foundAdded bool
+	for _, m := range resp.GetManifests() {
+		if m.GetAddedFilesCount() == 2 {
+			foundAdded = true
+		}
+		if m.GetManifestPath() == "" {
+			t.Fatalf("manifest_path should not be empty")
+		}
+	}
+	if !foundAdded {
+		t.Fatalf("expected a manifest with added_files_count == 2")
+	}
+}
+
+func TestGetManifestListNotFoundForMissingSnapshot(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+
+	_, err := client.GetManifestList(ctx, &metadata.GetManifestListRequest{
+		TableName:  "events",
+		SnapshotId: 9999,
+	})
+	if err == nil {
+		t.Fatalf("expected GetManifestList to fail for missing snapshot")
+	}
+	st, ok := status.FromError(err)
+	if !ok || st.Code() != codes.NotFound {
+		t.Fatalf("expected NotFound, got %v", err)
+	}
+}
+
+func TestGetManifestFileByID(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+	snap := commitSnapshot(t, ctx, client, "events", 0, makePartition("month=2025-01"))
+	if !snap.GetSuccess() {
+		t.Fatalf("CommitSnapshot failed: %s", snap.GetErrorMsg())
+	}
+
+	listResp, err := client.GetManifestList(ctx, &metadata.GetManifestListRequest{
+		TableName:  "events",
+		SnapshotId: snap.GetSnapshotId(),
+	})
+	if err != nil {
+		t.Fatalf("GetManifestList failed: %v", err)
+	}
+	if len(listResp.GetManifests()) == 0 {
+		t.Fatalf("expected at least one manifest file")
+	}
+
+	mfID := listResp.GetManifests()[0].GetManifestFileId()
+	detail, err := client.GetManifest(ctx, &metadata.GetManifestRequest{
+		TableName:      "events",
+		ManifestFileId: mfID,
+	})
+	if err != nil {
+		t.Fatalf("GetManifest failed: %v", err)
+	}
+	if detail.GetSnapshotId() != snap.GetSnapshotId() {
+		t.Fatalf("expected snapshot_id %d, got %d", snap.GetSnapshotId(), detail.GetSnapshotId())
+	}
+	if detail.GetAddedFilesCount() != 1 {
+		t.Fatalf("expected added_files_count 1, got %d", detail.GetAddedFilesCount())
+	}
+
+	var summaries []map[string]string
+	if err := json.Unmarshal([]byte(detail.GetPartitionSummariesJson()), &summaries); err != nil {
+		t.Fatalf("partition_summaries_json is not valid JSON: %v", err)
+	}
+}
+
+func TestGetManifestFileNotFound(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+
+	_, err := client.GetManifest(ctx, &metadata.GetManifestRequest{
+		TableName:      "events",
+		ManifestFileId: 99999,
+	})
+	if err == nil {
+		t.Fatalf("expected GetManifest to fail for missing manifest")
+	}
+	st, ok := status.FromError(err)
+	if !ok || st.Code() != codes.NotFound {
+		t.Fatalf("expected NotFound, got %v", err)
+	}
+}
+
+func TestCommitSnapshotWritesBothManifestAndPartitions(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+	snap := commitSnapshot(t, ctx, client, "events", 0,
+		makePartition("month=2025-01"),
+		makePartition("month=2025-02"),
+	)
+	if !snap.GetSuccess() {
+		t.Fatalf("CommitSnapshot failed: %s", snap.GetErrorMsg())
+	}
+
+	partsResp, err := client.GetPartitions(ctx, &metadata.PartitionRequest{TableName: "events"})
+	if err != nil {
+		t.Fatalf("GetPartitions failed: %v", err)
+	}
+	if len(partsResp.GetPartitions()) != 2 {
+		t.Fatalf("expected 2 partitions, got %d", len(partsResp.GetPartitions()))
+	}
+
+	listResp, err := client.GetManifestList(ctx, &metadata.GetManifestListRequest{
+		TableName:  "events",
+		SnapshotId: snap.GetSnapshotId(),
+	})
+	if err != nil {
+		t.Fatalf("GetManifestList failed: %v", err)
+	}
+	if listResp.GetManifestCount() < 1 {
+		t.Fatalf("expected at least 1 manifest in list, got %d", listResp.GetManifestCount())
+	}
+}
+
+func TestDeletedManifestWrittenOnOverwrite(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+
+	snap1 := commitSnapshot(t, ctx, client, "events", 0, makePartition("month=2025-01"))
+	if !snap1.GetSuccess() {
+		t.Fatalf("first CommitSnapshot failed: %s", snap1.GetErrorMsg())
+	}
+
+	resp, err := client.CommitSnapshot(ctx, &metadata.SnapshotRequest{
+		TableName:            "events",
+		ParentSnapshotId:     snap1.GetSnapshotId(),
+		Operation:            "overwrite",
+		DeletedPartitionKeys: []string{"month=2025-01"},
+		NewPartitions:        []*metadata.PartitionInfo{makePartition("month=2025-02")},
+	})
+	if err != nil {
+		t.Fatalf("second CommitSnapshot RPC failed: %v", err)
+	}
+	if !resp.GetSuccess() {
+		t.Fatalf("second CommitSnapshot failed: %s", resp.GetErrorMsg())
+	}
+
+	listResp, err := client.GetManifestList(ctx, &metadata.GetManifestListRequest{
+		TableName:  "events",
+		SnapshotId: resp.GetSnapshotId(),
+	})
+	if err != nil {
+		t.Fatalf("GetManifestList failed: %v", err)
+	}
+
+	var hasDeleted, hasAdded bool
+	for _, m := range listResp.GetManifests() {
+		if m.GetDeletedFilesCount() >= 1 {
+			hasDeleted = true
+		}
+		if m.GetAddedFilesCount() >= 1 {
+			hasAdded = true
+		}
+	}
+	if !hasDeleted {
+		t.Fatalf("expected a manifest with deleted_files_count >= 1")
+	}
+	if !hasAdded {
+		t.Fatalf("expected a manifest with added_files_count >= 1")
 	}
 }

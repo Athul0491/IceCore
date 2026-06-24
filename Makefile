@@ -10,6 +10,8 @@ proto:
 		--go_out=. \
 		--go-grpc_out=. \
 		$(PROTO_FILE)
+	cp -r gen/github.com/Athul0491/IceCore/gen/metadata/. gen/metadata/
+	rm -rf gen/github.com github.com
 
 run:
 	go run ./cmd/server

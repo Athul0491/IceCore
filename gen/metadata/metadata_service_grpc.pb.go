@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v4.25.3
-// source: metadata_service.proto
+// source: proto/metadata_service.proto
 
 package metadata
 
@@ -32,6 +32,8 @@ const (
 	MetadataService_BeginTransaction_FullMethodName  = "/metadata.MetadataService/BeginTransaction"
 	MetadataService_CommitTransaction_FullMethodName = "/metadata.MetadataService/CommitTransaction"
 	MetadataService_AbortTransaction_FullMethodName  = "/metadata.MetadataService/AbortTransaction"
+	MetadataService_GetManifestList_FullMethodName   = "/metadata.MetadataService/GetManifestList"
+	MetadataService_GetManifest_FullMethodName       = "/metadata.MetadataService/GetManifest"
 )
 
 // MetadataServiceClient is the client API for MetadataService service.
@@ -51,6 +53,8 @@ type MetadataServiceClient interface {
 	BeginTransaction(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*TransactionResponse, error)
 	CommitTransaction(ctx context.Context, in *CommitRequest, opts ...grpc.CallOption) (*OperationResponse, error)
 	AbortTransaction(ctx context.Context, in *AbortRequest, opts ...grpc.CallOption) (*OperationResponse, error)
+	GetManifestList(ctx context.Context, in *GetManifestListRequest, opts ...grpc.CallOption) (*ManifestListResponse, error)
+	GetManifest(ctx context.Context, in *GetManifestRequest, opts ...grpc.CallOption) (*ManifestFileDetail, error)
 }
 
 type metadataServiceClient struct {
@@ -191,6 +195,26 @@ func (c *metadataServiceClient) AbortTransaction(ctx context.Context, in *AbortR
 	return out, nil
 }
 
+func (c *metadataServiceClient) GetManifestList(ctx context.Context, in *GetManifestListRequest, opts ...grpc.CallOption) (*ManifestListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ManifestListResponse)
+	err := c.cc.Invoke(ctx, MetadataService_GetManifestList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metadataServiceClient) GetManifest(ctx context.Context, in *GetManifestRequest, opts ...grpc.CallOption) (*ManifestFileDetail, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ManifestFileDetail)
+	err := c.cc.Invoke(ctx, MetadataService_GetManifest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MetadataServiceServer is the server API for MetadataService service.
 // All implementations must embed UnimplementedMetadataServiceServer
 // for forward compatibility.
@@ -208,6 +232,8 @@ type MetadataServiceServer interface {
 	BeginTransaction(context.Context, *TransactionRequest) (*TransactionResponse, error)
 	CommitTransaction(context.Context, *CommitRequest) (*OperationResponse, error)
 	AbortTransaction(context.Context, *AbortRequest) (*OperationResponse, error)
+	GetManifestList(context.Context, *GetManifestListRequest) (*ManifestListResponse, error)
+	GetManifest(context.Context, *GetManifestRequest) (*ManifestFileDetail, error)
 	mustEmbedUnimplementedMetadataServiceServer()
 }
 
@@ -256,6 +282,12 @@ func (UnimplementedMetadataServiceServer) CommitTransaction(context.Context, *Co
 }
 func (UnimplementedMetadataServiceServer) AbortTransaction(context.Context, *AbortRequest) (*OperationResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AbortTransaction not implemented")
+}
+func (UnimplementedMetadataServiceServer) GetManifestList(context.Context, *GetManifestListRequest) (*ManifestListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetManifestList not implemented")
+}
+func (UnimplementedMetadataServiceServer) GetManifest(context.Context, *GetManifestRequest) (*ManifestFileDetail, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetManifest not implemented")
 }
 func (UnimplementedMetadataServiceServer) mustEmbedUnimplementedMetadataServiceServer() {}
 func (UnimplementedMetadataServiceServer) testEmbeddedByValue()                         {}
@@ -512,6 +544,42 @@ func _MetadataService_AbortTransaction_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MetadataService_GetManifestList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetManifestListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataServiceServer).GetManifestList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MetadataService_GetManifestList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataServiceServer).GetManifestList(ctx, req.(*GetManifestListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetadataService_GetManifest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetManifestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataServiceServer).GetManifest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MetadataService_GetManifest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataServiceServer).GetManifest(ctx, req.(*GetManifestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MetadataService_ServiceDesc is the grpc.ServiceDesc for MetadataService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -571,7 +639,15 @@ var MetadataService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "AbortTransaction",
 			Handler:    _MetadataService_AbortTransaction_Handler,
 		},
+		{
+			MethodName: "GetManifestList",
+			Handler:    _MetadataService_GetManifestList_Handler,
+		},
+		{
+			MethodName: "GetManifest",
+			Handler:    _MetadataService_GetManifest_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "metadata_service.proto",
+	Metadata: "proto/metadata_service.proto",
 }
