@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v4.25.3
-// source: proto/metadata_service.proto
+// source: metadata_service.proto
 
 package metadata
 
@@ -19,21 +19,23 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MetadataService_CreateTable_FullMethodName       = "/metadata.MetadataService/CreateTable"
-	MetadataService_GetTableMetadata_FullMethodName  = "/metadata.MetadataService/GetTableMetadata"
-	MetadataService_AlterTable_FullMethodName        = "/metadata.MetadataService/AlterTable"
-	MetadataService_DropTable_FullMethodName         = "/metadata.MetadataService/DropTable"
-	MetadataService_ListTables_FullMethodName        = "/metadata.MetadataService/ListTables"
-	MetadataService_GetPartitions_FullMethodName     = "/metadata.MetadataService/GetPartitions"
-	MetadataService_GetPartitionStats_FullMethodName = "/metadata.MetadataService/GetPartitionStats"
-	MetadataService_CommitSnapshot_FullMethodName    = "/metadata.MetadataService/CommitSnapshot"
-	MetadataService_GetSnapshot_FullMethodName       = "/metadata.MetadataService/GetSnapshot"
-	MetadataService_ListSnapshots_FullMethodName     = "/metadata.MetadataService/ListSnapshots"
-	MetadataService_BeginTransaction_FullMethodName  = "/metadata.MetadataService/BeginTransaction"
-	MetadataService_CommitTransaction_FullMethodName = "/metadata.MetadataService/CommitTransaction"
-	MetadataService_AbortTransaction_FullMethodName  = "/metadata.MetadataService/AbortTransaction"
-	MetadataService_GetManifestList_FullMethodName   = "/metadata.MetadataService/GetManifestList"
-	MetadataService_GetManifest_FullMethodName       = "/metadata.MetadataService/GetManifest"
+	MetadataService_CreateTable_FullMethodName        = "/metadata.MetadataService/CreateTable"
+	MetadataService_GetTableMetadata_FullMethodName   = "/metadata.MetadataService/GetTableMetadata"
+	MetadataService_AlterTable_FullMethodName         = "/metadata.MetadataService/AlterTable"
+	MetadataService_DropTable_FullMethodName          = "/metadata.MetadataService/DropTable"
+	MetadataService_ListTables_FullMethodName         = "/metadata.MetadataService/ListTables"
+	MetadataService_GetPartitions_FullMethodName      = "/metadata.MetadataService/GetPartitions"
+	MetadataService_GetPartitionStats_FullMethodName  = "/metadata.MetadataService/GetPartitionStats"
+	MetadataService_CommitSnapshot_FullMethodName     = "/metadata.MetadataService/CommitSnapshot"
+	MetadataService_GetSnapshot_FullMethodName        = "/metadata.MetadataService/GetSnapshot"
+	MetadataService_ListSnapshots_FullMethodName      = "/metadata.MetadataService/ListSnapshots"
+	MetadataService_BeginTransaction_FullMethodName   = "/metadata.MetadataService/BeginTransaction"
+	MetadataService_CommitTransaction_FullMethodName  = "/metadata.MetadataService/CommitTransaction"
+	MetadataService_AbortTransaction_FullMethodName   = "/metadata.MetadataService/AbortTransaction"
+	MetadataService_GetManifestList_FullMethodName    = "/metadata.MetadataService/GetManifestList"
+	MetadataService_GetManifest_FullMethodName        = "/metadata.MetadataService/GetManifest"
+	MetadataService_GetPartitionSpec_FullMethodName   = "/metadata.MetadataService/GetPartitionSpec"
+	MetadataService_ListPartitionSpecs_FullMethodName = "/metadata.MetadataService/ListPartitionSpecs"
 )
 
 // MetadataServiceClient is the client API for MetadataService service.
@@ -55,6 +57,8 @@ type MetadataServiceClient interface {
 	AbortTransaction(ctx context.Context, in *AbortRequest, opts ...grpc.CallOption) (*OperationResponse, error)
 	GetManifestList(ctx context.Context, in *GetManifestListRequest, opts ...grpc.CallOption) (*ManifestListResponse, error)
 	GetManifest(ctx context.Context, in *GetManifestRequest, opts ...grpc.CallOption) (*ManifestFileDetail, error)
+	GetPartitionSpec(ctx context.Context, in *GetPartitionSpecRequest, opts ...grpc.CallOption) (*PartitionSpecResponse, error)
+	ListPartitionSpecs(ctx context.Context, in *ListPartitionSpecsRequest, opts ...grpc.CallOption) (*ListPartitionSpecsResponse, error)
 }
 
 type metadataServiceClient struct {
@@ -215,6 +219,26 @@ func (c *metadataServiceClient) GetManifest(ctx context.Context, in *GetManifest
 	return out, nil
 }
 
+func (c *metadataServiceClient) GetPartitionSpec(ctx context.Context, in *GetPartitionSpecRequest, opts ...grpc.CallOption) (*PartitionSpecResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PartitionSpecResponse)
+	err := c.cc.Invoke(ctx, MetadataService_GetPartitionSpec_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metadataServiceClient) ListPartitionSpecs(ctx context.Context, in *ListPartitionSpecsRequest, opts ...grpc.CallOption) (*ListPartitionSpecsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPartitionSpecsResponse)
+	err := c.cc.Invoke(ctx, MetadataService_ListPartitionSpecs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MetadataServiceServer is the server API for MetadataService service.
 // All implementations must embed UnimplementedMetadataServiceServer
 // for forward compatibility.
@@ -234,6 +258,8 @@ type MetadataServiceServer interface {
 	AbortTransaction(context.Context, *AbortRequest) (*OperationResponse, error)
 	GetManifestList(context.Context, *GetManifestListRequest) (*ManifestListResponse, error)
 	GetManifest(context.Context, *GetManifestRequest) (*ManifestFileDetail, error)
+	GetPartitionSpec(context.Context, *GetPartitionSpecRequest) (*PartitionSpecResponse, error)
+	ListPartitionSpecs(context.Context, *ListPartitionSpecsRequest) (*ListPartitionSpecsResponse, error)
 	mustEmbedUnimplementedMetadataServiceServer()
 }
 
@@ -288,6 +314,12 @@ func (UnimplementedMetadataServiceServer) GetManifestList(context.Context, *GetM
 }
 func (UnimplementedMetadataServiceServer) GetManifest(context.Context, *GetManifestRequest) (*ManifestFileDetail, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetManifest not implemented")
+}
+func (UnimplementedMetadataServiceServer) GetPartitionSpec(context.Context, *GetPartitionSpecRequest) (*PartitionSpecResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPartitionSpec not implemented")
+}
+func (UnimplementedMetadataServiceServer) ListPartitionSpecs(context.Context, *ListPartitionSpecsRequest) (*ListPartitionSpecsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPartitionSpecs not implemented")
 }
 func (UnimplementedMetadataServiceServer) mustEmbedUnimplementedMetadataServiceServer() {}
 func (UnimplementedMetadataServiceServer) testEmbeddedByValue()                         {}
@@ -580,6 +612,42 @@ func _MetadataService_GetManifest_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MetadataService_GetPartitionSpec_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPartitionSpecRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataServiceServer).GetPartitionSpec(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MetadataService_GetPartitionSpec_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataServiceServer).GetPartitionSpec(ctx, req.(*GetPartitionSpecRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetadataService_ListPartitionSpecs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPartitionSpecsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataServiceServer).ListPartitionSpecs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MetadataService_ListPartitionSpecs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataServiceServer).ListPartitionSpecs(ctx, req.(*ListPartitionSpecsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MetadataService_ServiceDesc is the grpc.ServiceDesc for MetadataService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -647,7 +715,15 @@ var MetadataService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetManifest",
 			Handler:    _MetadataService_GetManifest_Handler,
 		},
+		{
+			MethodName: "GetPartitionSpec",
+			Handler:    _MetadataService_GetPartitionSpec_Handler,
+		},
+		{
+			MethodName: "ListPartitionSpecs",
+			Handler:    _MetadataService_ListPartitionSpecs_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/metadata_service.proto",
+	Metadata: "metadata_service.proto",
 }

@@ -1,14 +1,15 @@
 CREATE TABLE IF NOT EXISTS tables (
-    table_id            BIGSERIAL PRIMARY KEY,
-    table_name          TEXT UNIQUE NOT NULL,
-    schema_json         JSONB NOT NULL,
-    schema_version      INT NOT NULL DEFAULT 1,
-    partition_spec      TEXT,
-    current_snapshot_id BIGINT DEFAULT 0,
-    properties          JSONB DEFAULT '{}',
-    created_at          TIMESTAMPTZ DEFAULT now(),
-    updated_at          TIMESTAMPTZ DEFAULT now(),
-    is_deleted          BOOLEAN DEFAULT false
+    table_id              BIGSERIAL PRIMARY KEY,
+    table_name            TEXT UNIQUE NOT NULL,
+    schema_json           JSONB NOT NULL,
+    schema_version        INT NOT NULL DEFAULT 1,
+    partition_spec        JSONB,
+    partition_spec_version INT NOT NULL DEFAULT 1,
+    current_snapshot_id   BIGINT DEFAULT 0,
+    properties            JSONB DEFAULT '{}',
+    created_at            TIMESTAMPTZ DEFAULT now(),
+    updated_at            TIMESTAMPTZ DEFAULT now(),
+    is_deleted            BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS schema_history (
@@ -102,3 +103,16 @@ CREATE TABLE IF NOT EXISTS manifest_lists (
 
 CREATE INDEX idx_manifest_lists_snapshot
     ON manifest_lists(snapshot_id);
+
+CREATE TABLE IF NOT EXISTS partition_specs (
+    partition_spec_id BIGSERIAL PRIMARY KEY,
+    table_id          BIGINT NOT NULL REFERENCES tables(table_id),
+    spec_version      INT NOT NULL,
+    spec_json         JSONB NOT NULL,
+    changed_at        TIMESTAMPTZ DEFAULT now(),
+    change_summary    TEXT,
+    UNIQUE (table_id, spec_version)
+);
+
+CREATE INDEX idx_partition_specs_table
+    ON partition_specs(table_id, spec_version DESC);

@@ -41,29 +41,75 @@ func (m *CatalogManager) CreateTable(
 	ctx context.Context,
 	tableName string,
 	schemaJSON string,
-	partitionSpec string,
+	partitionSpecJSON string,
 	propertiesJSON string,
 ) CreateTableResult {
 	unlock := m.locks.LockExclusive(tableName)
 	defer unlock()
 
-	ok, err := m.pg.CreateTable(ctx, tableName, schemaJSON, partitionSpec, propertiesJSON)
+	tx, err := m.pg.BeginTx(ctx)
 	if err != nil {
-		return CreateTableResult{
-			Success:  false,
-			ErrorMsg: "failed to create table: " + err.Error(),
-		}
+		return CreateTableResult{Success: false, ErrorMsg: "failed to begin tx: " + err.Error()}
 	}
-	if !ok {
-		return CreateTableResult{
-			Success:  false,
-			ErrorMsg: "failed to create table (may already exist): " + tableName,
+	defer tx.Rollback(ctx)
+
+	tableID, created, err := m.pg.CreateTableTx(ctx, tx, tableName, schemaJSON, partitionSpecJSON, propertiesJSON)
+	if err != nil {
+		return CreateTableResult{Success: false, ErrorMsg: "failed to create table: " + err.Error()}
+	}
+	if !created {
+		return CreateTableResult{Success: false, ErrorMsg: "table already exists: " + tableName}
+	}
+
+	if partitionSpecJSON != "" && partitionSpecJSON != "null" {
+		if err := m.pg.InsertPartitionSpecTx(ctx, tx, tableID, 1, partitionSpecJSON, "initial spec"); err != nil {
+			return CreateTableResult{Success: false, ErrorMsg: "failed to record initial partition spec: " + err.Error()}
 		}
 	}
 
-	return CreateTableResult{
-		Success: true,
+	if err := tx.Commit(ctx); err != nil {
+		return CreateTableResult{Success: false, ErrorMsg: err.Error()}
 	}
+
+	return CreateTableResult{Success: true}
+}
+
+func (m *CatalogManager) AlterTablePartitionSpec(
+	ctx context.Context,
+	tableName string,
+	newSpecJSON string,
+	changeSummary string,
+) AlterResult {
+	unlock := m.locks.LockExclusive(tableName)
+	defer unlock()
+
+	existing, err := m.pg.GetTable(ctx, tableName)
+	if err != nil {
+		return AlterResult{Success: false, ErrorMsg: err.Error()}
+	}
+	if existing == nil {
+		return AlterResult{Success: false, ErrorMsg: "table not found: " + tableName}
+	}
+
+	tx, err := m.pg.BeginTx(ctx)
+	if err != nil {
+		return AlterResult{Success: false, ErrorMsg: err.Error()}
+	}
+	defer tx.Rollback(ctx)
+
+	newVersion := existing.PartitionSpecVersion + 1
+	if err := m.pg.UpdateTablePartitionSpecTx(ctx, tx, tableName, newSpecJSON, newVersion); err != nil {
+		return AlterResult{Success: false, ErrorMsg: "failed to update partition spec: " + err.Error()}
+	}
+	if err := m.pg.InsertPartitionSpecTx(ctx, tx, existing.TableID, newVersion, newSpecJSON, changeSummary); err != nil {
+		return AlterResult{Success: false, ErrorMsg: "failed to record spec history: " + err.Error()}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return AlterResult{Success: false, ErrorMsg: err.Error()}
+	}
+
+	return AlterResult{Success: true}
 }
 
 func (m *CatalogManager) GetTable(ctx context.Context, tableName string) (*db.TableRow, error) {

@@ -27,6 +27,7 @@ type MetadataServer struct {
 	partitions *catalog.PartitionRegistry
 	schemas    *catalog.SchemaStore
 	manifests  *catalog.ManifestStore
+	specs      *catalog.PartitionSpecStore
 }
 
 func defaultString(v, fallback string) string {
@@ -49,6 +50,7 @@ func New(cfg config.Config) (*MetadataServer, error) {
 	partitionRegistry := catalog.NewPartitionRegistry(pgClient, locks, mvcc, cfg.CacheCapacity, cfg.DisableCache)
 	schemaStore := catalog.NewSchemaStore(pgClient, locks)
 	manifestStore := catalog.NewManifestStore(pgClient)
+	specStore := catalog.NewPartitionSpecStore(pgClient, locks)
 
 	return &MetadataServer{
 		pgClient:   pgClient,
@@ -58,6 +60,7 @@ func New(cfg config.Config) (*MetadataServer, error) {
 		partitions: partitionRegistry,
 		schemas:    schemaStore,
 		manifests:  manifestStore,
+		specs:      specStore,
 	}, nil
 }
 
@@ -78,12 +81,99 @@ func propertiesToJSON(props map[string]string) string {
 	return string(b)
 }
 
+func initialSpecJSON(rawSpec string) string {
+	if rawSpec == "" {
+		return ""
+	}
+	spec := catalog.PartitionSpec{
+		Fields: []catalog.PartitionField{
+			{FieldID: 1, SourceColumn: rawSpec, Transform: catalog.TransformIdentity},
+		},
+	}
+	b, _ := json.Marshal(spec)
+	return string(b)
+}
+
+func protoToPartitionSpec(p *metadata.PartitionSpecProto) catalog.PartitionSpec {
+	if p == nil {
+		return catalog.PartitionSpec{}
+	}
+	fields := make([]catalog.PartitionField, 0, len(p.GetFields()))
+	for _, f := range p.GetFields() {
+		pf := catalog.PartitionField{
+			FieldID:      int(f.GetFieldId()),
+			SourceColumn: f.GetSourceColumn(),
+			Transform:    protoTransformToString(f.GetTransform()),
+		}
+		if param := f.GetTransformParam(); param != 0 {
+			v := int(param)
+			pf.TransformParam = &v
+		}
+		fields = append(fields, pf)
+	}
+	return catalog.PartitionSpec{Fields: fields}
+}
+
+func protoTransformToString(t metadata.PartitionTransform) catalog.PartitionTransform {
+	switch t {
+	case metadata.PartitionTransform_YEAR:
+		return catalog.TransformYear
+	case metadata.PartitionTransform_MONTH:
+		return catalog.TransformMonth
+	case metadata.PartitionTransform_DAY:
+		return catalog.TransformDay
+	case metadata.PartitionTransform_HOUR:
+		return catalog.TransformHour
+	case metadata.PartitionTransform_BUCKET:
+		return catalog.TransformBucket
+	case metadata.PartitionTransform_TRUNCATE:
+		return catalog.TransformTruncate
+	default:
+		return catalog.TransformIdentity
+	}
+}
+
+func partitionSpecToProto(spec catalog.PartitionSpec) *metadata.PartitionSpecProto {
+	fields := make([]*metadata.PartitionField, 0, len(spec.Fields))
+	for _, f := range spec.Fields {
+		pf := &metadata.PartitionField{
+			FieldId:      int32(f.FieldID),
+			SourceColumn: f.SourceColumn,
+			Transform:    stringTransformToProto(f.Transform),
+		}
+		if f.TransformParam != nil {
+			pf.TransformParam = int32(*f.TransformParam)
+		}
+		fields = append(fields, pf)
+	}
+	return &metadata.PartitionSpecProto{Fields: fields}
+}
+
+func stringTransformToProto(t catalog.PartitionTransform) metadata.PartitionTransform {
+	switch t {
+	case catalog.TransformYear:
+		return metadata.PartitionTransform_YEAR
+	case catalog.TransformMonth:
+		return metadata.PartitionTransform_MONTH
+	case catalog.TransformDay:
+		return metadata.PartitionTransform_DAY
+	case catalog.TransformHour:
+		return metadata.PartitionTransform_HOUR
+	case catalog.TransformBucket:
+		return metadata.PartitionTransform_BUCKET
+	case catalog.TransformTruncate:
+		return metadata.PartitionTransform_TRUNCATE
+	default:
+		return metadata.PartitionTransform_IDENTITY
+	}
+}
+
 func (s *MetadataServer) CreateTable(ctx context.Context, req *metadata.CreateTableRequest) (*metadata.OperationResponse, error) {
 	result := s.catalog.CreateTable(
 		ctx,
 		req.GetTableName(),
 		req.GetSchemaJson(),
-		req.GetPartitionSpec(),
+		initialSpecJSON(req.GetPartitionSpec()),
 		propertiesToJSON(req.GetProperties()),
 	)
 
@@ -224,11 +314,31 @@ func (s *MetadataServer) AlterTable(ctx context.Context, req *metadata.AlterTabl
 		}, nil
 
 	case *metadata.AlterTableRequest_NewPartitionSpec:
-		// still intentionally not implemented in your current design
-		return &metadata.OperationResponse{
-			Success:  false,
-			ErrorMsg: "partition spec update not yet implemented",
-		}, nil
+		spec := protoToPartitionSpec(alt.NewPartitionSpec)
+		proposedJSON, err := json.Marshal(spec)
+		if err != nil {
+			return &metadata.OperationResponse{Success: false, ErrorMsg: "invalid partition spec"}, nil
+		}
+
+		current, err := s.specs.GetCurrentSpec(ctx, tableName)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		currentJSON := ""
+		if current != nil {
+			currentJSON = current.SpecJSON
+		}
+
+		if msg := s.specs.ValidateSpecChange(currentJSON, string(proposedJSON)); msg != "" {
+			return &metadata.OperationResponse{Success: false, ErrorMsg: msg}, nil
+		}
+
+		result := s.catalog.AlterTablePartitionSpec(
+			ctx, tableName, string(proposedJSON),
+			"partition spec evolution via AlterTable",
+		)
+		s.partitions.InvalidateTableCache(tableName)
+		return &metadata.OperationResponse{Success: result.Success, ErrorMsg: result.ErrorMsg}, nil
 
 	default:
 		return &metadata.OperationResponse{
@@ -538,6 +648,70 @@ func (s *MetadataServer) CleanupExpiredTransactions() int {
 		return 0
 	}
 	return s.mvcc.CleanupExpiredTransactions()
+}
+
+func (s *MetadataServer) GetPartitionSpec(ctx context.Context, req *metadata.GetPartitionSpecRequest) (*metadata.PartitionSpecResponse, error) {
+	tableName := req.GetTableName()
+	if tableName == "" {
+		return nil, status.Error(codes.InvalidArgument, "table_name is required")
+	}
+
+	var sv *catalog.PartitionSpecVersion
+	var err error
+	if req.GetSpecVersion() == 0 {
+		sv, err = s.specs.GetCurrentSpec(ctx, tableName)
+	} else {
+		sv, err = s.specs.GetSpecAtVersion(ctx, tableName, req.GetSpecVersion())
+	}
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if sv == nil {
+		return nil, status.Error(codes.NotFound, "partition spec not found")
+	}
+
+	var spec catalog.PartitionSpec
+	if err := json.Unmarshal([]byte(sv.SpecJSON), &spec); err != nil {
+		return nil, status.Error(codes.Internal, "corrupt spec JSON")
+	}
+
+	return &metadata.PartitionSpecResponse{
+		TableName:     tableName,
+		SpecVersion:   sv.Version,
+		Spec:          partitionSpecToProto(spec),
+		ChangedAt:     sv.ChangedAt,
+		ChangeSummary: sv.ChangeSummary,
+	}, nil
+}
+
+func (s *MetadataServer) ListPartitionSpecs(ctx context.Context, req *metadata.ListPartitionSpecsRequest) (*metadata.ListPartitionSpecsResponse, error) {
+	tableName := req.GetTableName()
+	if tableName == "" {
+		return nil, status.Error(codes.InvalidArgument, "table_name is required")
+	}
+
+	history, err := s.specs.ListSpecHistory(ctx, tableName)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	resp := &metadata.ListPartitionSpecsResponse{
+		Specs: make([]*metadata.PartitionSpecResponse, 0, len(history)),
+	}
+	for _, sv := range history {
+		var spec catalog.PartitionSpec
+		if err := json.Unmarshal([]byte(sv.SpecJSON), &spec); err != nil {
+			continue
+		}
+		resp.Specs = append(resp.Specs, &metadata.PartitionSpecResponse{
+			TableName:     tableName,
+			SpecVersion:   sv.Version,
+			Spec:          partitionSpecToProto(spec),
+			ChangedAt:     sv.ChangedAt,
+			ChangeSummary: sv.ChangeSummary,
+		})
+	}
+	return resp, nil
 }
 
 func (s *MetadataServer) GetManifestList(ctx context.Context, req *metadata.GetManifestListRequest) (*metadata.ManifestListResponse, error) {

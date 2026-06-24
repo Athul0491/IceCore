@@ -152,6 +152,11 @@ func (r *PartitionRegistry) CommitSnapshot(
 	unlock := r.locks.LockExclusive(tableName)
 	defer unlock()
 
+	currentSpecVersion, err := r.pg.GetTableSpecVersion(ctx, tableName)
+	if err != nil {
+		return CommitResult{Success: false, ErrorMsg: "failed to get spec version: " + err.Error()}
+	}
+
 	currentSnap, err := r.pg.GetCurrentSnapshot(ctx, tableName)
 	if err != nil {
 		return CommitResult{
@@ -232,6 +237,7 @@ func (r *PartitionRegistry) CommitSnapshot(
 			TableID:            tableID,
 			SnapshotID:         int64(newSnap),
 			ManifestPath:       fmt.Sprintf("iceberg://%s/%d/%d.avro", tableName, newSnap, manifestCount),
+			PartitionSpecID:    currentSpecVersion,
 			AddedFilesCount:    int32(len(newPartitions)),
 			AddedRowsCount:     totalRows,
 			PartitionSummaries: string(summariesJSON),
@@ -252,6 +258,7 @@ func (r *PartitionRegistry) CommitSnapshot(
 			TableID:            tableID,
 			SnapshotID:         int64(newSnap),
 			ManifestPath:       fmt.Sprintf("iceberg://%s/%d/%d.avro", tableName, newSnap, manifestCount),
+			PartitionSpecID:    currentSpecVersion,
 			DeletedFilesCount:  int32(len(deletedPartitionKeys)),
 			PartitionSummaries: string(summariesJSON),
 		}

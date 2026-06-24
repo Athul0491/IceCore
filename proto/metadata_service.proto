@@ -23,6 +23,9 @@ service MetadataService {
 
     rpc GetManifestList(GetManifestListRequest) returns (ManifestListResponse);
     rpc GetManifest(GetManifestRequest) returns (ManifestFileDetail);
+
+    rpc GetPartitionSpec(GetPartitionSpecRequest) returns (PartitionSpecResponse);
+    rpc ListPartitionSpecs(ListPartitionSpecsRequest) returns (ListPartitionSpecsResponse);
 }
 
 
@@ -52,9 +55,9 @@ message TableMetadataResponse {
 message AlterTableRequest {
     string table_name = 1;
     oneof alteration {
-        string new_schema_json = 2;
-        string new_partition_spec = 3;
-        RenameTable rename = 4;
+        string             new_schema_json    = 2;
+        PartitionSpecProto new_partition_spec = 3;
+        RenameTable        rename             = 4;
     }
 }
 
@@ -187,6 +190,49 @@ message AbortRequest {
 message OperationResponse {
     bool success = 1;
     string error_msg = 2;
+}
+
+
+enum PartitionTransform {
+    IDENTITY = 0;
+    YEAR     = 1;
+    MONTH    = 2;
+    DAY      = 3;
+    HOUR     = 4;
+    BUCKET   = 5;
+    TRUNCATE = 6;
+}
+
+message PartitionField {
+    int32              field_id        = 1;
+    string             source_column   = 2;
+    PartitionTransform transform       = 3;
+    int32              transform_param = 4;
+}
+
+message PartitionSpecProto {
+    repeated PartitionField fields = 1;
+}
+
+message GetPartitionSpecRequest {
+    string table_name   = 1;
+    int32  spec_version = 2;
+}
+
+message PartitionSpecResponse {
+    string             table_name    = 1;
+    int32              spec_version  = 2;
+    PartitionSpecProto spec          = 3;
+    string             changed_at    = 4;
+    string             change_summary = 5;
+}
+
+message ListPartitionSpecsRequest {
+    string table_name = 1;
+}
+
+message ListPartitionSpecsResponse {
+    repeated PartitionSpecResponse specs = 1;
 }
 
 

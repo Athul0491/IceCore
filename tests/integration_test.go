@@ -767,6 +767,256 @@ func TestCommitTransactionUnknownTxnFails(t *testing.T) {
 	}
 }
 
+func TestAlterTablePartitionSpec(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+
+	// Get the initial spec (version 1, identity on "month")
+	specResp, err := client.GetPartitionSpec(ctx, &metadata.GetPartitionSpecRequest{
+		TableName: "events",
+	})
+	if err != nil {
+		t.Fatalf("GetPartitionSpec failed: %v", err)
+	}
+	if specResp.GetSpecVersion() != 1 {
+		t.Fatalf("expected spec version 1, got %d", specResp.GetSpecVersion())
+	}
+	if len(specResp.GetSpec().GetFields()) == 0 {
+		t.Fatalf("expected at least one field in initial spec")
+	}
+
+	// Add a second field (field_id=2)
+	alterResp, err := client.AlterTable(ctx, &metadata.AlterTableRequest{
+		TableName: "events",
+		Alteration: &metadata.AlterTableRequest_NewPartitionSpec{
+			NewPartitionSpec: &metadata.PartitionSpecProto{
+				Fields: []*metadata.PartitionField{
+					{FieldId: 1, SourceColumn: "month", Transform: metadata.PartitionTransform_IDENTITY},
+					{FieldId: 2, SourceColumn: "region", Transform: metadata.PartitionTransform_IDENTITY},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("AlterTable (spec) failed: %v", err)
+	}
+	if !alterResp.GetSuccess() {
+		t.Fatalf("AlterTable (spec) unsuccessful: %s", alterResp.GetErrorMsg())
+	}
+
+	// Current spec should now be version 2
+	specV2, err := client.GetPartitionSpec(ctx, &metadata.GetPartitionSpecRequest{
+		TableName: "events",
+	})
+	if err != nil {
+		t.Fatalf("GetPartitionSpec v2 failed: %v", err)
+	}
+	if specV2.GetSpecVersion() != 2 {
+		t.Fatalf("expected spec version 2, got %d", specV2.GetSpecVersion())
+	}
+	if len(specV2.GetSpec().GetFields()) != 2 {
+		t.Fatalf("expected 2 fields in spec v2, got %d", len(specV2.GetSpec().GetFields()))
+	}
+
+	// ListPartitionSpecs should return 2 entries
+	listResp, err := client.ListPartitionSpecs(ctx, &metadata.ListPartitionSpecsRequest{TableName: "events"})
+	if err != nil {
+		t.Fatalf("ListPartitionSpecs failed: %v", err)
+	}
+	if len(listResp.GetSpecs()) != 2 {
+		t.Fatalf("expected 2 spec history entries, got %d", len(listResp.GetSpecs()))
+	}
+}
+
+func TestAlterTablePartitionSpecRemoveFieldFails(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+
+	// Attempt to alter spec removing the initial field (field_id 1 missing)
+	resp, err := client.AlterTable(ctx, &metadata.AlterTableRequest{
+		TableName: "events",
+		Alteration: &metadata.AlterTableRequest_NewPartitionSpec{
+			NewPartitionSpec: &metadata.PartitionSpecProto{
+				Fields: []*metadata.PartitionField{
+					{FieldId: 2, SourceColumn: "region", Transform: metadata.PartitionTransform_IDENTITY},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("AlterTable RPC failed unexpectedly: %v", err)
+	}
+	if resp.GetSuccess() {
+		t.Fatalf("expected removing a field to fail, but it succeeded")
+	}
+	if resp.GetErrorMsg() == "" {
+		t.Fatalf("expected error message for field removal")
+	}
+}
+
+func TestAlterTablePartitionSpecChangeSourceColumnFails(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+
+	resp, err := client.AlterTable(ctx, &metadata.AlterTableRequest{
+		TableName: "events",
+		Alteration: &metadata.AlterTableRequest_NewPartitionSpec{
+			NewPartitionSpec: &metadata.PartitionSpecProto{
+				Fields: []*metadata.PartitionField{
+					{FieldId: 1, SourceColumn: "year", Transform: metadata.PartitionTransform_IDENTITY},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("AlterTable RPC failed unexpectedly: %v", err)
+	}
+	if resp.GetSuccess() {
+		t.Fatalf("expected changing source_column to fail, but it succeeded")
+	}
+}
+
+func TestCommitSnapshotStampsSpecID(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+	snap := commitSnapshot(t, ctx, client, "events", 0, makePartition("month=2025-01"))
+	if !snap.GetSuccess() {
+		t.Fatalf("CommitSnapshot failed: %s", snap.GetErrorMsg())
+	}
+
+	listResp, err := client.GetManifestList(ctx, &metadata.GetManifestListRequest{
+		TableName:  "events",
+		SnapshotId: snap.GetSnapshotId(),
+	})
+	if err != nil {
+		t.Fatalf("GetManifestList failed: %v", err)
+	}
+	if len(listResp.GetManifests()) == 0 {
+		t.Fatalf("expected at least one manifest")
+	}
+	for _, m := range listResp.GetManifests() {
+		if m.GetPartitionSpecId() != 1 {
+			t.Fatalf("expected partition_spec_id=1, got %d", m.GetPartitionSpecId())
+		}
+	}
+}
+
+func TestAlterSpecThenCommitUsesNewSpecID(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+
+	// Alter spec to v2
+	alterResp, err := client.AlterTable(ctx, &metadata.AlterTableRequest{
+		TableName: "events",
+		Alteration: &metadata.AlterTableRequest_NewPartitionSpec{
+			NewPartitionSpec: &metadata.PartitionSpecProto{
+				Fields: []*metadata.PartitionField{
+					{FieldId: 1, SourceColumn: "month", Transform: metadata.PartitionTransform_IDENTITY},
+					{FieldId: 2, SourceColumn: "region", Transform: metadata.PartitionTransform_IDENTITY},
+				},
+			},
+		},
+	})
+	if err != nil || !alterResp.GetSuccess() {
+		t.Fatalf("AlterTable failed: %v / %s", err, alterResp.GetErrorMsg())
+	}
+
+	snap := commitSnapshot(t, ctx, client, "events", 0, makePartition("month=2025-01"))
+	if !snap.GetSuccess() {
+		t.Fatalf("CommitSnapshot failed: %s", snap.GetErrorMsg())
+	}
+
+	listResp, err := client.GetManifestList(ctx, &metadata.GetManifestListRequest{
+		TableName:  "events",
+		SnapshotId: snap.GetSnapshotId(),
+	})
+	if err != nil {
+		t.Fatalf("GetManifestList failed: %v", err)
+	}
+	for _, m := range listResp.GetManifests() {
+		if m.GetPartitionSpecId() != 2 {
+			t.Fatalf("expected partition_spec_id=2 after spec alter, got %d", m.GetPartitionSpecId())
+		}
+	}
+}
+
+func TestGetPartitionSpecByVersion(t *testing.T) {
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	createTable(t, ctx, client, "events")
+
+	// Alter to v2
+	alterResp, err := client.AlterTable(ctx, &metadata.AlterTableRequest{
+		TableName: "events",
+		Alteration: &metadata.AlterTableRequest_NewPartitionSpec{
+			NewPartitionSpec: &metadata.PartitionSpecProto{
+				Fields: []*metadata.PartitionField{
+					{FieldId: 1, SourceColumn: "month", Transform: metadata.PartitionTransform_IDENTITY},
+					{FieldId: 2, SourceColumn: "region", Transform: metadata.PartitionTransform_IDENTITY},
+				},
+			},
+		},
+	})
+	if err != nil || !alterResp.GetSuccess() {
+		t.Fatalf("AlterTable failed: %v / %s", err, alterResp.GetErrorMsg())
+	}
+
+	// spec_version=0 → current (v2)
+	current, err := client.GetPartitionSpec(ctx, &metadata.GetPartitionSpecRequest{
+		TableName: "events",
+	})
+	if err != nil {
+		t.Fatalf("GetPartitionSpec (current) failed: %v", err)
+	}
+	if current.GetSpecVersion() != 2 {
+		t.Fatalf("expected current version 2, got %d", current.GetSpecVersion())
+	}
+
+	// spec_version=1 → original
+	v1, err := client.GetPartitionSpec(ctx, &metadata.GetPartitionSpecRequest{
+		TableName:   "events",
+		SpecVersion: 1,
+	})
+	if err != nil {
+		t.Fatalf("GetPartitionSpec v1 failed: %v", err)
+	}
+	if v1.GetSpecVersion() != 1 {
+		t.Fatalf("expected version 1, got %d", v1.GetSpecVersion())
+	}
+	if len(v1.GetSpec().GetFields()) != 1 {
+		t.Fatalf("expected 1 field in v1, got %d", len(v1.GetSpec().GetFields()))
+	}
+}
+
 func TestGetManifestListAfterCommit(t *testing.T) {
 	client, cleanup := setupTestServer(t)
 	defer cleanup()

@@ -13,13 +13,23 @@ type PartitionRow struct {
 }
 
 type TableRow struct {
-	TableID           int64
-	TableName         string
-	SchemaJSON        string
-	SchemaVersion     int32
-	PartitionSpec     string
-	CurrentSnapshotID int64
-	PropertiesJSON    string
+	TableID              int64
+	TableName            string
+	SchemaJSON           string
+	SchemaVersion        int32
+	PartitionSpec        string // stored as JSON text
+	PartitionSpecVersion int32
+	CurrentSnapshotID    int64
+	PropertiesJSON       string
+}
+
+type PartitionSpecRow struct {
+	PartitionSpecID int64
+	TableID         int64
+	SpecVersion     int32
+	SpecJSON        string
+	ChangedAt       string
+	ChangeSummary   string
 }
 
 type SnapshotRow struct {

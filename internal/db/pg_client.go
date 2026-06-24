@@ -45,32 +45,38 @@ func (c *PGClient) BeginTx(ctx context.Context) (pgx.Tx, error) {
 	return c.Pool.BeginTx(ctx, pgx.TxOptions{})
 }
 
-func (c *PGClient) CreateTable(
+func (c *PGClient) CreateTableTx(
 	ctx context.Context,
+	tx pgx.Tx,
 	tableName string,
 	schemaJSON string,
-	partitionSpec string,
+	partitionSpecJSON string,
 	propertiesJSON string,
-) (bool, error) {
-	cmd, err := c.Pool.Exec(
+) (int64, bool, error) {
+	var tableID int64
+	err := tx.QueryRow(
 		ctx,
 		`INSERT INTO tables (table_name, schema_json, partition_spec, properties)
-		 VALUES ($1, $2::jsonb, $3, $4::jsonb)
-		 ON CONFLICT (table_name) DO NOTHING`,
-		tableName, schemaJSON, partitionSpec, propertiesJSON,
-	)
+		 VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb)
+		 ON CONFLICT (table_name) DO NOTHING
+		 RETURNING table_id`,
+		tableName, schemaJSON, partitionSpecJSON, propertiesJSON,
+	).Scan(&tableID)
 	if err != nil {
-		return false, err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, false, nil
+		}
+		return 0, false, err
 	}
-
-	return cmd.RowsAffected() > 0, nil
+	return tableID, true, nil
 }
 
 func (c *PGClient) GetTable(ctx context.Context, tableName string) (*TableRow, error) {
 	row := c.Pool.QueryRow(
 		ctx,
 		`SELECT table_id, table_name, schema_json::text, schema_version,
-		        partition_spec, current_snapshot_id, properties::text
+		        partition_spec::text, partition_spec_version,
+		        current_snapshot_id, properties::text
 		   FROM tables
 		  WHERE table_name = $1 AND is_deleted = false`,
 		tableName,
@@ -83,6 +89,7 @@ func (c *PGClient) GetTable(ctx context.Context, tableName string) (*TableRow, e
 		&t.SchemaJSON,
 		&t.SchemaVersion,
 		&t.PartitionSpec,
+		&t.PartitionSpecVersion,
 		&t.CurrentSnapshotID,
 		&t.PropertiesJSON,
 	)
@@ -191,6 +198,12 @@ func (c *PGClient) DropTable(ctx context.Context, tx pgx.Tx, tableName string, p
 			return false, err
 		}
 
+		if _, err := tx.Exec(ctx, `DELETE FROM manifest_files WHERE table_id = $1`, tableID); err != nil {
+			return false, err
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM manifest_lists WHERE table_id = $1`, tableID); err != nil {
+			return false, err
+		}
 		if _, err := tx.Exec(ctx, `DELETE FROM partitions WHERE table_id = $1`, tableID); err != nil {
 			return false, err
 		}
@@ -198,6 +211,9 @@ func (c *PGClient) DropTable(ctx context.Context, tx pgx.Tx, tableName string, p
 			return false, err
 		}
 		if _, err := tx.Exec(ctx, `DELETE FROM schema_history WHERE table_id = $1`, tableID); err != nil {
+			return false, err
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM partition_specs WHERE table_id = $1`, tableID); err != nil {
 			return false, err
 		}
 
@@ -247,7 +263,8 @@ func (c *PGClient) ListTables(
 	rows, err := c.Pool.Query(
 		ctx,
 		`SELECT table_id, table_name, schema_json::text, schema_version,
-		        partition_spec, current_snapshot_id, properties::text
+		        partition_spec::text, partition_spec_version,
+		        current_snapshot_id, properties::text
 		   FROM tables
 		  WHERE is_deleted = false
 		  ORDER BY table_id
@@ -268,6 +285,7 @@ func (c *PGClient) ListTables(
 			&t.SchemaJSON,
 			&t.SchemaVersion,
 			&t.PartitionSpec,
+			&t.PartitionSpecVersion,
 			&t.CurrentSnapshotID,
 			&t.PropertiesJSON,
 		); err != nil {
@@ -878,6 +896,113 @@ func (c *PGClient) ListSnapshots(
 	}
 
 	return result, rows.Err()
+}
+
+func (c *PGClient) InsertPartitionSpecTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	tableID int64,
+	specVersion int32,
+	specJSON string,
+	changeSummary string,
+) error {
+	_, err := tx.Exec(
+		ctx,
+		`INSERT INTO partition_specs (table_id, spec_version, spec_json, change_summary)
+		 VALUES ($1, $2, $3::jsonb, $4)`,
+		tableID, specVersion, specJSON, changeSummary,
+	)
+	return err
+}
+
+func (c *PGClient) UpdateTablePartitionSpecTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	tableName string,
+	newSpecJSON string,
+	newVersion int32,
+) error {
+	_, err := tx.Exec(
+		ctx,
+		`UPDATE tables
+		    SET partition_spec = $1::jsonb,
+		        partition_spec_version = $2,
+		        updated_at = now()
+		  WHERE table_name = $3 AND is_deleted = false`,
+		newSpecJSON, newVersion, tableName,
+	)
+	return err
+}
+
+func (c *PGClient) GetPartitionSpecByVersion(
+	ctx context.Context,
+	tableID int64,
+	specVersion int32,
+) (*PartitionSpecRow, error) {
+	var r PartitionSpecRow
+	err := c.Pool.QueryRow(
+		ctx,
+		`SELECT partition_spec_id, table_id, spec_version,
+		        spec_json::text, changed_at::text, COALESCE(change_summary, '')
+		   FROM partition_specs
+		  WHERE table_id = $1 AND spec_version = $2`,
+		tableID, specVersion,
+	).Scan(&r.PartitionSpecID, &r.TableID, &r.SpecVersion, &r.SpecJSON, &r.ChangedAt, &r.ChangeSummary)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &r, nil
+}
+
+func (c *PGClient) ListPartitionSpecHistory(
+	ctx context.Context,
+	tableID int64,
+) ([]PartitionSpecRow, error) {
+	rows, err := c.Pool.Query(
+		ctx,
+		`SELECT partition_spec_id, table_id, spec_version,
+		        spec_json::text, changed_at::text, COALESCE(change_summary, '')
+		   FROM partition_specs
+		  WHERE table_id = $1
+		  ORDER BY spec_version DESC`,
+		tableID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []PartitionSpecRow
+	for rows.Next() {
+		var r PartitionSpecRow
+		if err := rows.Scan(
+			&r.PartitionSpecID, &r.TableID, &r.SpecVersion,
+			&r.SpecJSON, &r.ChangedAt, &r.ChangeSummary,
+		); err != nil {
+			return nil, err
+		}
+		result = append(result, r)
+	}
+	return result, rows.Err()
+}
+
+func (c *PGClient) GetTableSpecVersion(ctx context.Context, tableName string) (int32, error) {
+	var v int32
+	err := c.Pool.QueryRow(
+		ctx,
+		`SELECT partition_spec_version FROM tables WHERE table_name = $1 AND is_deleted = false`,
+		tableName,
+	).Scan(&v)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return v, nil
 }
 
 func (c *PGClient) GetVisiblePartitionCount(
