@@ -78,3 +78,6 @@ temp/
 coverage.out
 /grpcurl
 /docs
+
+# October desktop — local canvas state
+.october/

@@ -234,11 +234,6 @@ func (s *MetadataServer) GetTableMetadata(ctx context.Context, req *metadata.Tab
 	var totalBytes int64
 
 	for _, p := range parts {
-		columnStats := map[string]string{}
-		if p.ColumnStatsJSON != "" && p.ColumnStatsJSON != "null" {
-			_ = json.Unmarshal([]byte(p.ColumnStatsJSON), &columnStats)
-		}
-
 		resp.Partitions = append(resp.Partitions, &metadata.PartitionInfo{
 			PartitionKey: p.PartitionKey,
 			DataFilePath: p.DataFilePath,
@@ -246,7 +241,7 @@ func (s *MetadataServer) GetTableMetadata(ctx context.Context, req *metadata.Tab
 			SizeBytes:    p.SizeBytes,
 			SnapshotId:   uint64(p.SnapshotID),
 			FileFormat:   p.FileFormat,
-			ColumnStats:  columnStats,
+			ColumnStats:  columnStatsToProto(p.ColumnStats),
 		})
 
 		totalRows += p.RowCount
@@ -493,16 +488,60 @@ func (s *MetadataServer) GetPartitionStats(ctx context.Context, req *metadata.Pa
 	}, nil
 }
 
+func protoToColumnStats(proto []*metadata.ColumnStats) []db.ColumnStats {
+	if len(proto) == 0 {
+		return nil
+	}
+	out := make([]db.ColumnStats, 0, len(proto))
+	for _, cs := range proto {
+		out = append(out, db.ColumnStats{
+			ColumnID:   cs.GetColumnId(),
+			NullCount:  cs.GetNullCount(),
+			NaNCount:   cs.GetNanCount(),
+			ValueCount: cs.GetValueCount(),
+			MinValue:   cs.GetMinValue(),
+			MaxValue:   cs.GetMaxValue(),
+			SizeBytes:  cs.GetSizeBytes(),
+		})
+	}
+	return out
+}
+
+func columnStatsToProto(stats []db.ColumnStats) []*metadata.ColumnStats {
+	if len(stats) == 0 {
+		return nil
+	}
+	out := make([]*metadata.ColumnStats, 0, len(stats))
+	for _, cs := range stats {
+		out = append(out, &metadata.ColumnStats{
+			ColumnId:   cs.ColumnID,
+			NullCount:  cs.NullCount,
+			NanCount:   cs.NaNCount,
+			ValueCount: cs.ValueCount,
+			MinValue:   cs.MinValue,
+			MaxValue:   cs.MaxValue,
+			SizeBytes:  cs.SizeBytes,
+		})
+	}
+	return out
+}
+
 func (s *MetadataServer) CommitSnapshot(ctx context.Context, req *metadata.SnapshotRequest) (*metadata.SnapshotResponse, error) {
 	newParts := make([]db.PartitionRow, 0, len(req.GetNewPartitions()))
 	for _, p := range req.GetNewPartitions() {
+		if p.GetRowCount() <= 0 {
+			return &metadata.SnapshotResponse{
+				Success:  false,
+				ErrorMsg: fmt.Sprintf("partition %q: row_count must be > 0", p.GetPartitionKey()),
+			}, nil
+		}
 		newParts = append(newParts, db.PartitionRow{
-			PartitionKey:    p.GetPartitionKey(),
-			DataFilePath:    p.GetDataFilePath(),
-			FileFormat:      defaultString(p.GetFileFormat(), "parquet"),
-			RowCount:        p.GetRowCount(),
-			SizeBytes:       p.GetSizeBytes(),
-			ColumnStatsJSON: "{}",
+			PartitionKey: p.GetPartitionKey(),
+			DataFilePath: p.GetDataFilePath(),
+			FileFormat:   defaultString(p.GetFileFormat(), "parquet"),
+			RowCount:     p.GetRowCount(),
+			SizeBytes:    p.GetSizeBytes(),
+			ColumnStats:  protoToColumnStats(p.GetColumnStats()),
 		})
 	}
 
@@ -519,6 +558,47 @@ func (s *MetadataServer) CommitSnapshot(ctx context.Context, req *metadata.Snaps
 		Success:    result.Success,
 		SnapshotId: result.SnapshotID,
 		ErrorMsg:   result.ErrorMsg,
+	}, nil
+}
+
+func (s *MetadataServer) GetColumnStats(ctx context.Context, req *metadata.GetColumnStatsRequest) (*metadata.GetColumnStatsResponse, error) {
+	tableName := req.GetTableName()
+	if tableName == "" {
+		return nil, status.Error(codes.InvalidArgument, "table_name is required")
+	}
+
+	snapshotID := req.GetSnapshotId()
+	if snapshotID == 0 {
+		current, err := s.pgClient.GetCurrentSnapshot(ctx, tableName)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if current == 0 {
+			return nil, status.Error(codes.NotFound, "table has no snapshots: "+tableName)
+		}
+		snapshotID = current
+	}
+
+	stats, err := s.pgClient.GetColumnStatsForSnapshot(ctx, tableName, snapshotID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	bounds := make([]*metadata.ColumnBounds, 0, len(stats))
+	for _, cs := range stats {
+		bounds = append(bounds, &metadata.ColumnBounds{
+			ColumnId:   cs.ColumnID,
+			MinValue:   cs.MinValue,
+			MaxValue:   cs.MaxValue,
+			NullCount:  cs.NullCount,
+			NanCount:   cs.NaNCount,
+			ValueCount: cs.ValueCount,
+		})
+	}
+
+	return &metadata.GetColumnStatsResponse{
+		SnapshotId:   snapshotID,
+		ColumnBounds: bounds,
 	}, nil
 }
 

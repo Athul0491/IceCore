@@ -26,6 +26,7 @@ const (
 	MetadataService_ListTables_FullMethodName         = "/metadata.MetadataService/ListTables"
 	MetadataService_GetPartitions_FullMethodName      = "/metadata.MetadataService/GetPartitions"
 	MetadataService_GetPartitionStats_FullMethodName  = "/metadata.MetadataService/GetPartitionStats"
+	MetadataService_GetColumnStats_FullMethodName     = "/metadata.MetadataService/GetColumnStats"
 	MetadataService_CommitSnapshot_FullMethodName     = "/metadata.MetadataService/CommitSnapshot"
 	MetadataService_GetSnapshot_FullMethodName        = "/metadata.MetadataService/GetSnapshot"
 	MetadataService_ListSnapshots_FullMethodName      = "/metadata.MetadataService/ListSnapshots"
@@ -49,6 +50,7 @@ type MetadataServiceClient interface {
 	ListTables(ctx context.Context, in *ListTablesRequest, opts ...grpc.CallOption) (*ListTablesResponse, error)
 	GetPartitions(ctx context.Context, in *PartitionRequest, opts ...grpc.CallOption) (*PartitionListResponse, error)
 	GetPartitionStats(ctx context.Context, in *PartitionStatsRequest, opts ...grpc.CallOption) (*PartitionStatsResponse, error)
+	GetColumnStats(ctx context.Context, in *GetColumnStatsRequest, opts ...grpc.CallOption) (*GetColumnStatsResponse, error)
 	CommitSnapshot(ctx context.Context, in *SnapshotRequest, opts ...grpc.CallOption) (*SnapshotResponse, error)
 	GetSnapshot(ctx context.Context, in *GetSnapshotRequest, opts ...grpc.CallOption) (*SnapshotDetail, error)
 	ListSnapshots(ctx context.Context, in *ListSnapshotsRequest, opts ...grpc.CallOption) (*ListSnapshotsResponse, error)
@@ -133,6 +135,16 @@ func (c *metadataServiceClient) GetPartitionStats(ctx context.Context, in *Parti
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PartitionStatsResponse)
 	err := c.cc.Invoke(ctx, MetadataService_GetPartitionStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metadataServiceClient) GetColumnStats(ctx context.Context, in *GetColumnStatsRequest, opts ...grpc.CallOption) (*GetColumnStatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetColumnStatsResponse)
+	err := c.cc.Invoke(ctx, MetadataService_GetColumnStats_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -250,6 +262,7 @@ type MetadataServiceServer interface {
 	ListTables(context.Context, *ListTablesRequest) (*ListTablesResponse, error)
 	GetPartitions(context.Context, *PartitionRequest) (*PartitionListResponse, error)
 	GetPartitionStats(context.Context, *PartitionStatsRequest) (*PartitionStatsResponse, error)
+	GetColumnStats(context.Context, *GetColumnStatsRequest) (*GetColumnStatsResponse, error)
 	CommitSnapshot(context.Context, *SnapshotRequest) (*SnapshotResponse, error)
 	GetSnapshot(context.Context, *GetSnapshotRequest) (*SnapshotDetail, error)
 	ListSnapshots(context.Context, *ListSnapshotsRequest) (*ListSnapshotsResponse, error)
@@ -290,6 +303,9 @@ func (UnimplementedMetadataServiceServer) GetPartitions(context.Context, *Partit
 }
 func (UnimplementedMetadataServiceServer) GetPartitionStats(context.Context, *PartitionStatsRequest) (*PartitionStatsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPartitionStats not implemented")
+}
+func (UnimplementedMetadataServiceServer) GetColumnStats(context.Context, *GetColumnStatsRequest) (*GetColumnStatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetColumnStats not implemented")
 }
 func (UnimplementedMetadataServiceServer) CommitSnapshot(context.Context, *SnapshotRequest) (*SnapshotResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CommitSnapshot not implemented")
@@ -464,6 +480,24 @@ func _MetadataService_GetPartitionStats_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MetadataServiceServer).GetPartitionStats(ctx, req.(*PartitionStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetadataService_GetColumnStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetColumnStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataServiceServer).GetColumnStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MetadataService_GetColumnStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataServiceServer).GetColumnStats(ctx, req.(*GetColumnStatsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -682,6 +716,10 @@ var MetadataService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPartitionStats",
 			Handler:    _MetadataService_GetPartitionStats_Handler,
+		},
+		{
+			MethodName: "GetColumnStats",
+			Handler:    _MetadataService_GetColumnStats_Handler,
 		},
 		{
 			MethodName: "CommitSnapshot",

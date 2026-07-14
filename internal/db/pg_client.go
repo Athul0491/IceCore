@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strconv"
 
@@ -424,6 +425,7 @@ func (c *PGClient) QueryPartitions(
 	result := make([]PartitionRow, 0)
 	for rows.Next() {
 		var r PartitionRow
+		var statsJSON string
 		if err := rows.Scan(
 			&r.PartitionID,
 			&r.TableID,
@@ -433,10 +435,11 @@ func (c *PGClient) QueryPartitions(
 			&r.FileFormat,
 			&r.RowCount,
 			&r.SizeBytes,
-			&r.ColumnStatsJSON,
+			&statsJSON,
 		); err != nil {
 			return nil, err
 		}
+		r.ColumnStats = unmarshalColumnStats(statsJSON)
 		result = append(result, r)
 	}
 
@@ -483,6 +486,7 @@ func (c *PGClient) QueryPartitionsPaged(
 	result := make([]PartitionRow, 0)
 	for rows.Next() {
 		var r PartitionRow
+		var statsJSON string
 		if err := rows.Scan(
 			&r.PartitionID,
 			&r.TableID,
@@ -492,10 +496,11 @@ func (c *PGClient) QueryPartitionsPaged(
 			&r.FileFormat,
 			&r.RowCount,
 			&r.SizeBytes,
-			&r.ColumnStatsJSON,
+			&statsJSON,
 		); err != nil {
 			return nil, err
 		}
+		r.ColumnStats = unmarshalColumnStats(statsJSON)
 		result = append(result, r)
 	}
 
@@ -719,10 +724,7 @@ func (c *PGClient) InsertPartitionTx(
 		return err
 	}
 
-	columnStats := part.ColumnStatsJSON
-	if columnStats == "" {
-		columnStats = "{}"
-	}
+	statsJSON := marshalColumnStats(part.ColumnStats)
 
 	_, err = tx.Exec(
 		ctx,
@@ -738,9 +740,89 @@ func (c *PGClient) InsertPartitionTx(
 		part.FileFormat,
 		part.RowCount,
 		part.SizeBytes,
-		columnStats,
+		statsJSON,
 	)
 	return err
+}
+
+// GetColumnStatsForSnapshot returns per-column bounds aggregated across all
+// data files visible at the given snapshot.
+func (c *PGClient) GetColumnStatsForSnapshot(
+	ctx context.Context,
+	tableName string,
+	snapshotID uint64,
+) ([]ColumnStats, error) {
+	rows, err := c.QueryPartitions(ctx, tableName, snapshotID)
+	if err != nil {
+		return nil, err
+	}
+
+	type agg struct {
+		nullCount  int64
+		nanCount   int64
+		valueCount int64
+		minValue   string
+		maxValue   string
+		hasMin     bool
+	}
+	byCol := map[int32]*agg{}
+
+	for _, p := range rows {
+		for _, cs := range p.ColumnStats {
+			a, ok := byCol[cs.ColumnID]
+			if !ok {
+				a = &agg{}
+				byCol[cs.ColumnID] = a
+			}
+			a.nullCount += cs.NullCount
+			a.nanCount += cs.NaNCount
+			a.valueCount += cs.ValueCount
+			if cs.MinValue != "" {
+				if !a.hasMin || cs.MinValue < a.minValue {
+					a.minValue = cs.MinValue
+					a.hasMin = true
+				}
+			}
+			if cs.MaxValue != "" && cs.MaxValue > a.maxValue {
+				a.maxValue = cs.MaxValue
+			}
+		}
+	}
+
+	result := make([]ColumnStats, 0, len(byCol))
+	for colID, a := range byCol {
+		result = append(result, ColumnStats{
+			ColumnID:   colID,
+			NullCount:  a.nullCount,
+			NaNCount:   a.nanCount,
+			ValueCount: a.valueCount,
+			MinValue:   a.minValue,
+			MaxValue:   a.maxValue,
+		})
+	}
+	return result, nil
+}
+
+func marshalColumnStats(stats []ColumnStats) string {
+	if len(stats) == 0 {
+		return "[]"
+	}
+	b, err := json.Marshal(stats)
+	if err != nil {
+		return "[]"
+	}
+	return string(b)
+}
+
+func unmarshalColumnStats(raw string) []ColumnStats {
+	if raw == "" || raw == "null" || raw == "{}" {
+		return nil
+	}
+	var stats []ColumnStats
+	if err := json.Unmarshal([]byte(raw), &stats); err != nil {
+		return nil
+	}
+	return stats
 }
 
 func (c *PGClient) MarkPartitionDeletedTx(

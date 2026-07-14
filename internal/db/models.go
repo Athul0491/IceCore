@@ -1,15 +1,30 @@
 package db
 
+// ColumnStats holds per-column bounds for one data file.
+// Field naming follows Apache Iceberg DataFile field IDs:
+//
+//	value_count → 112, null_count → 113, min_value → 115,
+//	max_value   → 116, size_bytes → 117, nan_count  → 128.
+type ColumnStats struct {
+	ColumnID   int32  `json:"column_id"`
+	NullCount  int64  `json:"null_count"`
+	NaNCount   int64  `json:"nan_count"`
+	ValueCount int64  `json:"value_count"`
+	MinValue   string `json:"min_value,omitempty"`
+	MaxValue   string `json:"max_value,omitempty"`
+	SizeBytes  int64  `json:"size_bytes"`
+}
+
 type PartitionRow struct {
-	PartitionID     int64
-	TableID         int64
-	SnapshotID      int64
-	PartitionKey    string
-	DataFilePath    string
-	FileFormat      string
-	RowCount        int64
-	SizeBytes       int64
-	ColumnStatsJSON string
+	PartitionID  int64
+	TableID      int64
+	SnapshotID   int64
+	PartitionKey string
+	DataFilePath string
+	FileFormat   string
+	RowCount     int64
+	SizeBytes    int64
+	ColumnStats  []ColumnStats
 }
 
 type TableRow struct {

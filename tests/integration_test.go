@@ -1238,3 +1238,191 @@ func TestDeletedManifestWrittenOnOverwrite(t *testing.T) {
 		t.Fatalf("expected a manifest with added_files_count >= 1")
 	}
 }
+
+func makePartitionWithStats(key string, stats []*metadata.ColumnStats) *metadata.PartitionInfo {
+	return &metadata.PartitionInfo{
+		PartitionKey: key,
+		DataFilePath: "s3://bucket/events/" + key + "/part-0.parquet",
+		RowCount:     50000,
+		SizeBytes:    8000000,
+		FileFormat:   "parquet",
+		ColumnStats:  stats,
+	}
+}
+
+func TestCommitSnapshotStoresColumnStats(t *testing.T) {
+	ctx := context.Background()
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	createTable(t, ctx, client, "events")
+
+	stats := []*metadata.ColumnStats{
+		{ColumnId: 1, NullCount: 0, NanCount: 0, ValueCount: 50000, MinValue: "100", MaxValue: "999", SizeBytes: 4000000},
+		{ColumnId: 2, NullCount: 10, NanCount: 5, ValueCount: 50000, MinValue: "2024-01-01", MaxValue: "2024-12-31", SizeBytes: 4000000},
+	}
+
+	snap := commitSnapshot(t, ctx, client, "events", 0, makePartitionWithStats("month=2024-01", stats))
+	if !snap.GetSuccess() {
+		t.Fatalf("CommitSnapshot failed: %s", snap.GetErrorMsg())
+	}
+
+	meta, err := client.GetTableMetadata(ctx, &metadata.TableRequest{TableName: "events"})
+	if err != nil {
+		t.Fatalf("GetTableMetadata failed: %v", err)
+	}
+	if len(meta.GetPartitions()) != 1 {
+		t.Fatalf("expected 1 partition, got %d", len(meta.GetPartitions()))
+	}
+
+	got := meta.GetPartitions()[0].GetColumnStats()
+	if len(got) != 2 {
+		t.Fatalf("expected 2 column stats entries, got %d", len(got))
+	}
+
+	byID := map[int32]*metadata.ColumnStats{}
+	for _, cs := range got {
+		byID[cs.GetColumnId()] = cs
+	}
+
+	c1 := byID[1]
+	if c1 == nil {
+		t.Fatal("missing stats for column_id=1")
+	}
+	if c1.GetNullCount() != 0 || c1.GetValueCount() != 50000 || c1.GetMinValue() != "100" || c1.GetMaxValue() != "999" {
+		t.Errorf("column 1 stats mismatch: %+v", c1)
+	}
+
+	c2 := byID[2]
+	if c2 == nil {
+		t.Fatal("missing stats for column_id=2")
+	}
+	if c2.GetNullCount() != 10 || c2.GetNanCount() != 5 {
+		t.Errorf("column 2 null/nan count mismatch: %+v", c2)
+	}
+}
+
+func TestGetColumnStatsAggregatesAcrossPartitions(t *testing.T) {
+	ctx := context.Background()
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	createTable(t, ctx, client, "sales")
+
+	p1 := makePartitionWithStats("month=2024-01", []*metadata.ColumnStats{
+		{ColumnId: 1, NullCount: 2, NanCount: 0, ValueCount: 1000, MinValue: "10", MaxValue: "500"},
+		{ColumnId: 2, NullCount: 0, NanCount: 0, ValueCount: 1000, MinValue: "alpha", MaxValue: "gamma"},
+	})
+	p2 := makePartitionWithStats("month=2024-02", []*metadata.ColumnStats{
+		{ColumnId: 1, NullCount: 5, NanCount: 1, ValueCount: 800, MinValue: "5", MaxValue: "900"},
+		{ColumnId: 2, NullCount: 3, NanCount: 0, ValueCount: 800, MinValue: "beta", MaxValue: "zeta"},
+	})
+
+	snap := commitSnapshot(t, ctx, client, "sales", 0, p1, p2)
+	if !snap.GetSuccess() {
+		t.Fatalf("CommitSnapshot failed: %s", snap.GetErrorMsg())
+	}
+
+	resp, err := client.GetColumnStats(ctx, &metadata.GetColumnStatsRequest{
+		TableName:  "sales",
+		SnapshotId: snap.GetSnapshotId(),
+	})
+	if err != nil {
+		t.Fatalf("GetColumnStats failed: %v", err)
+	}
+	if resp.GetSnapshotId() != snap.GetSnapshotId() {
+		t.Errorf("snapshot_id mismatch: want %d got %d", snap.GetSnapshotId(), resp.GetSnapshotId())
+	}
+
+	byID := map[int32]*metadata.ColumnBounds{}
+	for _, cb := range resp.GetColumnBounds() {
+		byID[cb.GetColumnId()] = cb
+	}
+
+	c1 := byID[1]
+	if c1 == nil {
+		t.Fatal("missing bounds for column_id=1")
+	}
+	if c1.GetNullCount() != 7 {
+		t.Errorf("column 1 null_count: want 7, got %d", c1.GetNullCount())
+	}
+	if c1.GetNanCount() != 1 {
+		t.Errorf("column 1 nan_count: want 1, got %d", c1.GetNanCount())
+	}
+	if c1.GetValueCount() != 1800 {
+		t.Errorf("column 1 value_count: want 1800, got %d", c1.GetValueCount())
+	}
+	if c1.GetMinValue() != "10" {
+		t.Errorf("column 1 min_value: want '10', got %q", c1.GetMinValue())
+	}
+	if c1.GetMaxValue() != "900" {
+		t.Errorf("column 1 max_value: want '900', got %q", c1.GetMaxValue())
+	}
+
+	c2 := byID[2]
+	if c2 == nil {
+		t.Fatal("missing bounds for column_id=2")
+	}
+	if c2.GetMinValue() != "alpha" {
+		t.Errorf("column 2 min_value: want 'alpha', got %q", c2.GetMinValue())
+	}
+	if c2.GetMaxValue() != "zeta" {
+		t.Errorf("column 2 max_value: want 'zeta', got %q", c2.GetMaxValue())
+	}
+}
+
+func TestGetColumnStatsUsesCurrentSnapshotWhenZero(t *testing.T) {
+	ctx := context.Background()
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	createTable(t, ctx, client, "logs")
+
+	p := makePartitionWithStats("month=2024-03", []*metadata.ColumnStats{
+		{ColumnId: 1, NullCount: 0, NanCount: 0, ValueCount: 200, MinValue: "a", MaxValue: "z"},
+	})
+	snap := commitSnapshot(t, ctx, client, "logs", 0, p)
+	if !snap.GetSuccess() {
+		t.Fatalf("CommitSnapshot failed: %s", snap.GetErrorMsg())
+	}
+
+	// snapshot_id = 0 → should resolve to current snapshot
+	resp, err := client.GetColumnStats(ctx, &metadata.GetColumnStatsRequest{TableName: "logs"})
+	if err != nil {
+		t.Fatalf("GetColumnStats failed: %v", err)
+	}
+	if len(resp.GetColumnBounds()) != 1 {
+		t.Fatalf("expected 1 column bounds entry, got %d", len(resp.GetColumnBounds()))
+	}
+}
+
+func TestCommitSnapshotRejectsZeroRowCount(t *testing.T) {
+	ctx := context.Background()
+	client, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	createTable(t, ctx, client, "strict")
+
+	badPartition := &metadata.PartitionInfo{
+		PartitionKey: "month=2024-01",
+		DataFilePath: "s3://bucket/data.parquet",
+		RowCount:     0,
+		SizeBytes:    1000,
+		FileFormat:   "parquet",
+	}
+
+	resp, err := client.CommitSnapshot(ctx, &metadata.SnapshotRequest{
+		TableName:     "strict",
+		Operation:     "append",
+		NewPartitions: []*metadata.PartitionInfo{badPartition},
+	})
+	if err != nil {
+		t.Fatalf("CommitSnapshot RPC failed: %v", err)
+	}
+	if resp.GetSuccess() {
+		t.Fatal("expected CommitSnapshot to fail for row_count=0, but it succeeded")
+	}
+	if resp.GetErrorMsg() == "" {
+		t.Fatal("expected non-empty error_msg for zero row_count")
+	}
+}

@@ -722,6 +722,105 @@ func (x *TableSummary) GetTotalPartitions() int64 {
 	return 0
 }
 
+// ColumnStats holds per-column bounds for a single data file.
+// column_id maps to the Iceberg schema field_id.
+// Iceberg DataFile field alignment:
+//
+//	value_count → field 112, null_count → field 113,
+//	min_value   → field 115, max_value  → field 116,
+//	size_bytes  → field 117, nan_count  → field 128.
+type ColumnStats struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ColumnId      int32                  `protobuf:"varint,1,opt,name=column_id,json=columnId,proto3" json:"column_id,omitempty"`
+	NullCount     int64                  `protobuf:"varint,2,opt,name=null_count,json=nullCount,proto3" json:"null_count,omitempty"`
+	NanCount      int64                  `protobuf:"varint,3,opt,name=nan_count,json=nanCount,proto3" json:"nan_count,omitempty"`
+	ValueCount    int64                  `protobuf:"varint,4,opt,name=value_count,json=valueCount,proto3" json:"value_count,omitempty"`
+	MinValue      string                 `protobuf:"bytes,5,opt,name=min_value,json=minValue,proto3" json:"min_value,omitempty"`
+	MaxValue      string                 `protobuf:"bytes,6,opt,name=max_value,json=maxValue,proto3" json:"max_value,omitempty"`
+	SizeBytes     int64                  `protobuf:"varint,7,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ColumnStats) Reset() {
+	*x = ColumnStats{}
+	mi := &file_metadata_service_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ColumnStats) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ColumnStats) ProtoMessage() {}
+
+func (x *ColumnStats) ProtoReflect() protoreflect.Message {
+	mi := &file_metadata_service_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ColumnStats.ProtoReflect.Descriptor instead.
+func (*ColumnStats) Descriptor() ([]byte, []int) {
+	return file_metadata_service_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ColumnStats) GetColumnId() int32 {
+	if x != nil {
+		return x.ColumnId
+	}
+	return 0
+}
+
+func (x *ColumnStats) GetNullCount() int64 {
+	if x != nil {
+		return x.NullCount
+	}
+	return 0
+}
+
+func (x *ColumnStats) GetNanCount() int64 {
+	if x != nil {
+		return x.NanCount
+	}
+	return 0
+}
+
+func (x *ColumnStats) GetValueCount() int64 {
+	if x != nil {
+		return x.ValueCount
+	}
+	return 0
+}
+
+func (x *ColumnStats) GetMinValue() string {
+	if x != nil {
+		return x.MinValue
+	}
+	return ""
+}
+
+func (x *ColumnStats) GetMaxValue() string {
+	if x != nil {
+		return x.MaxValue
+	}
+	return ""
+}
+
+func (x *ColumnStats) GetSizeBytes() int64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
 type PartitionInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PartitionKey  string                 `protobuf:"bytes,1,opt,name=partition_key,json=partitionKey,proto3" json:"partition_key,omitempty"`
@@ -730,14 +829,14 @@ type PartitionInfo struct {
 	SizeBytes     int64                  `protobuf:"varint,4,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
 	SnapshotId    uint64                 `protobuf:"varint,5,opt,name=snapshot_id,json=snapshotId,proto3" json:"snapshot_id,omitempty"`
 	FileFormat    string                 `protobuf:"bytes,6,opt,name=file_format,json=fileFormat,proto3" json:"file_format,omitempty"`
-	ColumnStats   map[string]string      `protobuf:"bytes,7,rep,name=column_stats,json=columnStats,proto3" json:"column_stats,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	ColumnStats   []*ColumnStats         `protobuf:"bytes,7,rep,name=column_stats,json=columnStats,proto3" json:"column_stats,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PartitionInfo) Reset() {
 	*x = PartitionInfo{}
-	mi := &file_metadata_service_proto_msgTypes[9]
+	mi := &file_metadata_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -749,7 +848,7 @@ func (x *PartitionInfo) String() string {
 func (*PartitionInfo) ProtoMessage() {}
 
 func (x *PartitionInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[9]
+	mi := &file_metadata_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -762,7 +861,7 @@ func (x *PartitionInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionInfo.ProtoReflect.Descriptor instead.
 func (*PartitionInfo) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{9}
+	return file_metadata_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *PartitionInfo) GetPartitionKey() string {
@@ -807,7 +906,7 @@ func (x *PartitionInfo) GetFileFormat() string {
 	return ""
 }
 
-func (x *PartitionInfo) GetColumnStats() map[string]string {
+func (x *PartitionInfo) GetColumnStats() []*ColumnStats {
 	if x != nil {
 		return x.ColumnStats
 	}
@@ -827,7 +926,7 @@ type PartitionRequest struct {
 
 func (x *PartitionRequest) Reset() {
 	*x = PartitionRequest{}
-	mi := &file_metadata_service_proto_msgTypes[10]
+	mi := &file_metadata_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -839,7 +938,7 @@ func (x *PartitionRequest) String() string {
 func (*PartitionRequest) ProtoMessage() {}
 
 func (x *PartitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[10]
+	mi := &file_metadata_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -852,7 +951,7 @@ func (x *PartitionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionRequest.ProtoReflect.Descriptor instead.
 func (*PartitionRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{10}
+	return file_metadata_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *PartitionRequest) GetTableName() string {
@@ -901,7 +1000,7 @@ type PartitionListResponse struct {
 
 func (x *PartitionListResponse) Reset() {
 	*x = PartitionListResponse{}
-	mi := &file_metadata_service_proto_msgTypes[11]
+	mi := &file_metadata_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -913,7 +1012,7 @@ func (x *PartitionListResponse) String() string {
 func (*PartitionListResponse) ProtoMessage() {}
 
 func (x *PartitionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[11]
+	mi := &file_metadata_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -926,7 +1025,7 @@ func (x *PartitionListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionListResponse.ProtoReflect.Descriptor instead.
 func (*PartitionListResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{11}
+	return file_metadata_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *PartitionListResponse) GetPartitions() []*PartitionInfo {
@@ -959,7 +1058,7 @@ type PartitionStatsRequest struct {
 
 func (x *PartitionStatsRequest) Reset() {
 	*x = PartitionStatsRequest{}
-	mi := &file_metadata_service_proto_msgTypes[12]
+	mi := &file_metadata_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -971,7 +1070,7 @@ func (x *PartitionStatsRequest) String() string {
 func (*PartitionStatsRequest) ProtoMessage() {}
 
 func (x *PartitionStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[12]
+	mi := &file_metadata_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -984,7 +1083,7 @@ func (x *PartitionStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionStatsRequest.ProtoReflect.Descriptor instead.
 func (*PartitionStatsRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{12}
+	return file_metadata_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PartitionStatsRequest) GetTableName() string {
@@ -1006,7 +1105,7 @@ type PartitionStatsResponse struct {
 
 func (x *PartitionStatsResponse) Reset() {
 	*x = PartitionStatsResponse{}
-	mi := &file_metadata_service_proto_msgTypes[13]
+	mi := &file_metadata_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1018,7 +1117,7 @@ func (x *PartitionStatsResponse) String() string {
 func (*PartitionStatsResponse) ProtoMessage() {}
 
 func (x *PartitionStatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[13]
+	mi := &file_metadata_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1031,7 +1130,7 @@ func (x *PartitionStatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionStatsResponse.ProtoReflect.Descriptor instead.
 func (*PartitionStatsResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{13}
+	return file_metadata_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *PartitionStatsResponse) GetTotalPartitions() int64 {
@@ -1075,7 +1174,7 @@ type SnapshotRequest struct {
 
 func (x *SnapshotRequest) Reset() {
 	*x = SnapshotRequest{}
-	mi := &file_metadata_service_proto_msgTypes[14]
+	mi := &file_metadata_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1087,7 +1186,7 @@ func (x *SnapshotRequest) String() string {
 func (*SnapshotRequest) ProtoMessage() {}
 
 func (x *SnapshotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[14]
+	mi := &file_metadata_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1100,7 +1199,7 @@ func (x *SnapshotRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapshotRequest.ProtoReflect.Descriptor instead.
 func (*SnapshotRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{14}
+	return file_metadata_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *SnapshotRequest) GetTableName() string {
@@ -1149,7 +1248,7 @@ type SnapshotResponse struct {
 
 func (x *SnapshotResponse) Reset() {
 	*x = SnapshotResponse{}
-	mi := &file_metadata_service_proto_msgTypes[15]
+	mi := &file_metadata_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1161,7 +1260,7 @@ func (x *SnapshotResponse) String() string {
 func (*SnapshotResponse) ProtoMessage() {}
 
 func (x *SnapshotResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[15]
+	mi := &file_metadata_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1174,7 +1273,7 @@ func (x *SnapshotResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapshotResponse.ProtoReflect.Descriptor instead.
 func (*SnapshotResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{15}
+	return file_metadata_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SnapshotResponse) GetSnapshotId() uint64 {
@@ -1208,7 +1307,7 @@ type GetSnapshotRequest struct {
 
 func (x *GetSnapshotRequest) Reset() {
 	*x = GetSnapshotRequest{}
-	mi := &file_metadata_service_proto_msgTypes[16]
+	mi := &file_metadata_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1220,7 +1319,7 @@ func (x *GetSnapshotRequest) String() string {
 func (*GetSnapshotRequest) ProtoMessage() {}
 
 func (x *GetSnapshotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[16]
+	mi := &file_metadata_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1233,7 +1332,7 @@ func (x *GetSnapshotRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSnapshotRequest.ProtoReflect.Descriptor instead.
 func (*GetSnapshotRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{16}
+	return file_metadata_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetSnapshotRequest) GetTableName() string {
@@ -1264,7 +1363,7 @@ type SnapshotDetail struct {
 
 func (x *SnapshotDetail) Reset() {
 	*x = SnapshotDetail{}
-	mi := &file_metadata_service_proto_msgTypes[17]
+	mi := &file_metadata_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1276,7 +1375,7 @@ func (x *SnapshotDetail) String() string {
 func (*SnapshotDetail) ProtoMessage() {}
 
 func (x *SnapshotDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[17]
+	mi := &file_metadata_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1289,7 +1388,7 @@ func (x *SnapshotDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapshotDetail.ProtoReflect.Descriptor instead.
 func (*SnapshotDetail) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{17}
+	return file_metadata_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SnapshotDetail) GetSnapshotId() uint64 {
@@ -1344,7 +1443,7 @@ type ListSnapshotsRequest struct {
 
 func (x *ListSnapshotsRequest) Reset() {
 	*x = ListSnapshotsRequest{}
-	mi := &file_metadata_service_proto_msgTypes[18]
+	mi := &file_metadata_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1356,7 +1455,7 @@ func (x *ListSnapshotsRequest) String() string {
 func (*ListSnapshotsRequest) ProtoMessage() {}
 
 func (x *ListSnapshotsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[18]
+	mi := &file_metadata_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1369,7 +1468,7 @@ func (x *ListSnapshotsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSnapshotsRequest.ProtoReflect.Descriptor instead.
 func (*ListSnapshotsRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{18}
+	return file_metadata_service_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ListSnapshotsRequest) GetTableName() string {
@@ -1395,7 +1494,7 @@ type ListSnapshotsResponse struct {
 
 func (x *ListSnapshotsResponse) Reset() {
 	*x = ListSnapshotsResponse{}
-	mi := &file_metadata_service_proto_msgTypes[19]
+	mi := &file_metadata_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1407,7 +1506,7 @@ func (x *ListSnapshotsResponse) String() string {
 func (*ListSnapshotsResponse) ProtoMessage() {}
 
 func (x *ListSnapshotsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[19]
+	mi := &file_metadata_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1420,7 +1519,7 @@ func (x *ListSnapshotsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSnapshotsResponse.ProtoReflect.Descriptor instead.
 func (*ListSnapshotsResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{19}
+	return file_metadata_service_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ListSnapshotsResponse) GetSnapshots() []*SnapshotDetail {
@@ -1441,7 +1540,7 @@ type TransactionRequest struct {
 
 func (x *TransactionRequest) Reset() {
 	*x = TransactionRequest{}
-	mi := &file_metadata_service_proto_msgTypes[20]
+	mi := &file_metadata_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1453,7 +1552,7 @@ func (x *TransactionRequest) String() string {
 func (*TransactionRequest) ProtoMessage() {}
 
 func (x *TransactionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[20]
+	mi := &file_metadata_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1466,7 +1565,7 @@ func (x *TransactionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransactionRequest.ProtoReflect.Descriptor instead.
 func (*TransactionRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{20}
+	return file_metadata_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *TransactionRequest) GetClientId() string {
@@ -1500,7 +1599,7 @@ type TransactionResponse struct {
 
 func (x *TransactionResponse) Reset() {
 	*x = TransactionResponse{}
-	mi := &file_metadata_service_proto_msgTypes[21]
+	mi := &file_metadata_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1512,7 +1611,7 @@ func (x *TransactionResponse) String() string {
 func (*TransactionResponse) ProtoMessage() {}
 
 func (x *TransactionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[21]
+	mi := &file_metadata_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1525,7 +1624,7 @@ func (x *TransactionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransactionResponse.ProtoReflect.Descriptor instead.
 func (*TransactionResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{21}
+	return file_metadata_service_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *TransactionResponse) GetTxnId() uint64 {
@@ -1551,7 +1650,7 @@ type CommitRequest struct {
 
 func (x *CommitRequest) Reset() {
 	*x = CommitRequest{}
-	mi := &file_metadata_service_proto_msgTypes[22]
+	mi := &file_metadata_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1563,7 +1662,7 @@ func (x *CommitRequest) String() string {
 func (*CommitRequest) ProtoMessage() {}
 
 func (x *CommitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[22]
+	mi := &file_metadata_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1576,7 +1675,7 @@ func (x *CommitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitRequest.ProtoReflect.Descriptor instead.
 func (*CommitRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{22}
+	return file_metadata_service_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *CommitRequest) GetTxnId() uint64 {
@@ -1595,7 +1694,7 @@ type AbortRequest struct {
 
 func (x *AbortRequest) Reset() {
 	*x = AbortRequest{}
-	mi := &file_metadata_service_proto_msgTypes[23]
+	mi := &file_metadata_service_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1607,7 +1706,7 @@ func (x *AbortRequest) String() string {
 func (*AbortRequest) ProtoMessage() {}
 
 func (x *AbortRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[23]
+	mi := &file_metadata_service_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1620,7 +1719,7 @@ func (x *AbortRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AbortRequest.ProtoReflect.Descriptor instead.
 func (*AbortRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{23}
+	return file_metadata_service_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *AbortRequest) GetTxnId() uint64 {
@@ -1640,7 +1739,7 @@ type OperationResponse struct {
 
 func (x *OperationResponse) Reset() {
 	*x = OperationResponse{}
-	mi := &file_metadata_service_proto_msgTypes[24]
+	mi := &file_metadata_service_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1652,7 +1751,7 @@ func (x *OperationResponse) String() string {
 func (*OperationResponse) ProtoMessage() {}
 
 func (x *OperationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[24]
+	mi := &file_metadata_service_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1665,7 +1764,7 @@ func (x *OperationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperationResponse.ProtoReflect.Descriptor instead.
 func (*OperationResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{24}
+	return file_metadata_service_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *OperationResponse) GetSuccess() bool {
@@ -1694,7 +1793,7 @@ type PartitionField struct {
 
 func (x *PartitionField) Reset() {
 	*x = PartitionField{}
-	mi := &file_metadata_service_proto_msgTypes[25]
+	mi := &file_metadata_service_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1706,7 +1805,7 @@ func (x *PartitionField) String() string {
 func (*PartitionField) ProtoMessage() {}
 
 func (x *PartitionField) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[25]
+	mi := &file_metadata_service_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1719,7 +1818,7 @@ func (x *PartitionField) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionField.ProtoReflect.Descriptor instead.
 func (*PartitionField) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{25}
+	return file_metadata_service_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *PartitionField) GetFieldId() int32 {
@@ -1759,7 +1858,7 @@ type PartitionSpecProto struct {
 
 func (x *PartitionSpecProto) Reset() {
 	*x = PartitionSpecProto{}
-	mi := &file_metadata_service_proto_msgTypes[26]
+	mi := &file_metadata_service_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1771,7 +1870,7 @@ func (x *PartitionSpecProto) String() string {
 func (*PartitionSpecProto) ProtoMessage() {}
 
 func (x *PartitionSpecProto) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[26]
+	mi := &file_metadata_service_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1784,7 +1883,7 @@ func (x *PartitionSpecProto) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionSpecProto.ProtoReflect.Descriptor instead.
 func (*PartitionSpecProto) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{26}
+	return file_metadata_service_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *PartitionSpecProto) GetFields() []*PartitionField {
@@ -1804,7 +1903,7 @@ type GetPartitionSpecRequest struct {
 
 func (x *GetPartitionSpecRequest) Reset() {
 	*x = GetPartitionSpecRequest{}
-	mi := &file_metadata_service_proto_msgTypes[27]
+	mi := &file_metadata_service_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1816,7 +1915,7 @@ func (x *GetPartitionSpecRequest) String() string {
 func (*GetPartitionSpecRequest) ProtoMessage() {}
 
 func (x *GetPartitionSpecRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[27]
+	mi := &file_metadata_service_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1829,7 +1928,7 @@ func (x *GetPartitionSpecRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPartitionSpecRequest.ProtoReflect.Descriptor instead.
 func (*GetPartitionSpecRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{27}
+	return file_metadata_service_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *GetPartitionSpecRequest) GetTableName() string {
@@ -1859,7 +1958,7 @@ type PartitionSpecResponse struct {
 
 func (x *PartitionSpecResponse) Reset() {
 	*x = PartitionSpecResponse{}
-	mi := &file_metadata_service_proto_msgTypes[28]
+	mi := &file_metadata_service_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1871,7 +1970,7 @@ func (x *PartitionSpecResponse) String() string {
 func (*PartitionSpecResponse) ProtoMessage() {}
 
 func (x *PartitionSpecResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[28]
+	mi := &file_metadata_service_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1884,7 +1983,7 @@ func (x *PartitionSpecResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartitionSpecResponse.ProtoReflect.Descriptor instead.
 func (*PartitionSpecResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{28}
+	return file_metadata_service_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *PartitionSpecResponse) GetTableName() string {
@@ -1931,7 +2030,7 @@ type ListPartitionSpecsRequest struct {
 
 func (x *ListPartitionSpecsRequest) Reset() {
 	*x = ListPartitionSpecsRequest{}
-	mi := &file_metadata_service_proto_msgTypes[29]
+	mi := &file_metadata_service_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1943,7 +2042,7 @@ func (x *ListPartitionSpecsRequest) String() string {
 func (*ListPartitionSpecsRequest) ProtoMessage() {}
 
 func (x *ListPartitionSpecsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[29]
+	mi := &file_metadata_service_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1956,7 +2055,7 @@ func (x *ListPartitionSpecsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPartitionSpecsRequest.ProtoReflect.Descriptor instead.
 func (*ListPartitionSpecsRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{29}
+	return file_metadata_service_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ListPartitionSpecsRequest) GetTableName() string {
@@ -1975,7 +2074,7 @@ type ListPartitionSpecsResponse struct {
 
 func (x *ListPartitionSpecsResponse) Reset() {
 	*x = ListPartitionSpecsResponse{}
-	mi := &file_metadata_service_proto_msgTypes[30]
+	mi := &file_metadata_service_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1987,7 +2086,7 @@ func (x *ListPartitionSpecsResponse) String() string {
 func (*ListPartitionSpecsResponse) ProtoMessage() {}
 
 func (x *ListPartitionSpecsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[30]
+	mi := &file_metadata_service_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2000,7 +2099,7 @@ func (x *ListPartitionSpecsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPartitionSpecsResponse.ProtoReflect.Descriptor instead.
 func (*ListPartitionSpecsResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{30}
+	return file_metadata_service_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ListPartitionSpecsResponse) GetSpecs() []*PartitionSpecResponse {
@@ -2020,7 +2119,7 @@ type GetManifestListRequest struct {
 
 func (x *GetManifestListRequest) Reset() {
 	*x = GetManifestListRequest{}
-	mi := &file_metadata_service_proto_msgTypes[31]
+	mi := &file_metadata_service_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2032,7 +2131,7 @@ func (x *GetManifestListRequest) String() string {
 func (*GetManifestListRequest) ProtoMessage() {}
 
 func (x *GetManifestListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[31]
+	mi := &file_metadata_service_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2045,7 +2144,7 @@ func (x *GetManifestListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetManifestListRequest.ProtoReflect.Descriptor instead.
 func (*GetManifestListRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{31}
+	return file_metadata_service_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *GetManifestListRequest) GetTableName() string {
@@ -2078,7 +2177,7 @@ type ManifestFileSummary struct {
 
 func (x *ManifestFileSummary) Reset() {
 	*x = ManifestFileSummary{}
-	mi := &file_metadata_service_proto_msgTypes[32]
+	mi := &file_metadata_service_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2090,7 +2189,7 @@ func (x *ManifestFileSummary) String() string {
 func (*ManifestFileSummary) ProtoMessage() {}
 
 func (x *ManifestFileSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[32]
+	mi := &file_metadata_service_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2103,7 +2202,7 @@ func (x *ManifestFileSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManifestFileSummary.ProtoReflect.Descriptor instead.
 func (*ManifestFileSummary) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{32}
+	return file_metadata_service_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ManifestFileSummary) GetManifestFileId() int64 {
@@ -2173,7 +2272,7 @@ type ManifestListResponse struct {
 
 func (x *ManifestListResponse) Reset() {
 	*x = ManifestListResponse{}
-	mi := &file_metadata_service_proto_msgTypes[33]
+	mi := &file_metadata_service_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2185,7 +2284,7 @@ func (x *ManifestListResponse) String() string {
 func (*ManifestListResponse) ProtoMessage() {}
 
 func (x *ManifestListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[33]
+	mi := &file_metadata_service_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2198,7 +2297,7 @@ func (x *ManifestListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManifestListResponse.ProtoReflect.Descriptor instead.
 func (*ManifestListResponse) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{33}
+	return file_metadata_service_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ManifestListResponse) GetSnapshotId() uint64 {
@@ -2232,7 +2331,7 @@ type GetManifestRequest struct {
 
 func (x *GetManifestRequest) Reset() {
 	*x = GetManifestRequest{}
-	mi := &file_metadata_service_proto_msgTypes[34]
+	mi := &file_metadata_service_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2244,7 +2343,7 @@ func (x *GetManifestRequest) String() string {
 func (*GetManifestRequest) ProtoMessage() {}
 
 func (x *GetManifestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[34]
+	mi := &file_metadata_service_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2257,7 +2356,7 @@ func (x *GetManifestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetManifestRequest.ProtoReflect.Descriptor instead.
 func (*GetManifestRequest) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{34}
+	return file_metadata_service_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *GetManifestRequest) GetTableName() string {
@@ -2272,6 +2371,198 @@ func (x *GetManifestRequest) GetManifestFileId() int64 {
 		return x.ManifestFileId
 	}
 	return 0
+}
+
+// GetColumnStats — per-column bounds aggregated across all data files visible
+// at the given snapshot. Enables query-engine partition pruning.
+type GetColumnStatsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TableName     string                 `protobuf:"bytes,1,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
+	SnapshotId    uint64                 `protobuf:"varint,2,opt,name=snapshot_id,json=snapshotId,proto3" json:"snapshot_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetColumnStatsRequest) Reset() {
+	*x = GetColumnStatsRequest{}
+	mi := &file_metadata_service_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetColumnStatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetColumnStatsRequest) ProtoMessage() {}
+
+func (x *GetColumnStatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_metadata_service_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetColumnStatsRequest.ProtoReflect.Descriptor instead.
+func (*GetColumnStatsRequest) Descriptor() ([]byte, []int) {
+	return file_metadata_service_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *GetColumnStatsRequest) GetTableName() string {
+	if x != nil {
+		return x.TableName
+	}
+	return ""
+}
+
+func (x *GetColumnStatsRequest) GetSnapshotId() uint64 {
+	if x != nil {
+		return x.SnapshotId
+	}
+	return 0
+}
+
+// ColumnBounds merges the per-file ColumnStats across all visible partitions:
+// null_count / nan_count / value_count are summed; min/max are the global bounds.
+type ColumnBounds struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ColumnId      int32                  `protobuf:"varint,1,opt,name=column_id,json=columnId,proto3" json:"column_id,omitempty"`
+	MinValue      string                 `protobuf:"bytes,2,opt,name=min_value,json=minValue,proto3" json:"min_value,omitempty"`
+	MaxValue      string                 `protobuf:"bytes,3,opt,name=max_value,json=maxValue,proto3" json:"max_value,omitempty"`
+	NullCount     int64                  `protobuf:"varint,4,opt,name=null_count,json=nullCount,proto3" json:"null_count,omitempty"`
+	NanCount      int64                  `protobuf:"varint,5,opt,name=nan_count,json=nanCount,proto3" json:"nan_count,omitempty"`
+	ValueCount    int64                  `protobuf:"varint,6,opt,name=value_count,json=valueCount,proto3" json:"value_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ColumnBounds) Reset() {
+	*x = ColumnBounds{}
+	mi := &file_metadata_service_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ColumnBounds) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ColumnBounds) ProtoMessage() {}
+
+func (x *ColumnBounds) ProtoReflect() protoreflect.Message {
+	mi := &file_metadata_service_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ColumnBounds.ProtoReflect.Descriptor instead.
+func (*ColumnBounds) Descriptor() ([]byte, []int) {
+	return file_metadata_service_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *ColumnBounds) GetColumnId() int32 {
+	if x != nil {
+		return x.ColumnId
+	}
+	return 0
+}
+
+func (x *ColumnBounds) GetMinValue() string {
+	if x != nil {
+		return x.MinValue
+	}
+	return ""
+}
+
+func (x *ColumnBounds) GetMaxValue() string {
+	if x != nil {
+		return x.MaxValue
+	}
+	return ""
+}
+
+func (x *ColumnBounds) GetNullCount() int64 {
+	if x != nil {
+		return x.NullCount
+	}
+	return 0
+}
+
+func (x *ColumnBounds) GetNanCount() int64 {
+	if x != nil {
+		return x.NanCount
+	}
+	return 0
+}
+
+func (x *ColumnBounds) GetValueCount() int64 {
+	if x != nil {
+		return x.ValueCount
+	}
+	return 0
+}
+
+type GetColumnStatsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SnapshotId    uint64                 `protobuf:"varint,1,opt,name=snapshot_id,json=snapshotId,proto3" json:"snapshot_id,omitempty"`
+	ColumnBounds  []*ColumnBounds        `protobuf:"bytes,2,rep,name=column_bounds,json=columnBounds,proto3" json:"column_bounds,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetColumnStatsResponse) Reset() {
+	*x = GetColumnStatsResponse{}
+	mi := &file_metadata_service_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetColumnStatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetColumnStatsResponse) ProtoMessage() {}
+
+func (x *GetColumnStatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_metadata_service_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetColumnStatsResponse.ProtoReflect.Descriptor instead.
+func (*GetColumnStatsResponse) Descriptor() ([]byte, []int) {
+	return file_metadata_service_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *GetColumnStatsResponse) GetSnapshotId() uint64 {
+	if x != nil {
+		return x.SnapshotId
+	}
+	return 0
+}
+
+func (x *GetColumnStatsResponse) GetColumnBounds() []*ColumnBounds {
+	if x != nil {
+		return x.ColumnBounds
+	}
+	return nil
 }
 
 type ManifestFileDetail struct {
@@ -2291,7 +2582,7 @@ type ManifestFileDetail struct {
 
 func (x *ManifestFileDetail) Reset() {
 	*x = ManifestFileDetail{}
-	mi := &file_metadata_service_proto_msgTypes[35]
+	mi := &file_metadata_service_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2303,7 +2594,7 @@ func (x *ManifestFileDetail) String() string {
 func (*ManifestFileDetail) ProtoMessage() {}
 
 func (x *ManifestFileDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_metadata_service_proto_msgTypes[35]
+	mi := &file_metadata_service_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2316,7 +2607,7 @@ func (x *ManifestFileDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManifestFileDetail.ProtoReflect.Descriptor instead.
 func (*ManifestFileDetail) Descriptor() ([]byte, []int) {
-	return file_metadata_service_proto_rawDescGZIP(), []int{35}
+	return file_metadata_service_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ManifestFileDetail) GetManifestFileId() int64 {
@@ -2448,7 +2739,18 @@ const file_metadata_service_proto_rawDesc = "" +
 	"\n" +
 	"table_name\x18\x01 \x01(\tR\ttableName\x12.\n" +
 	"\x13current_snapshot_id\x18\x02 \x01(\x04R\x11currentSnapshotId\x12)\n" +
-	"\x10total_partitions\x18\x03 \x01(\x03R\x0ftotalPartitions\"\xe5\x02\n" +
+	"\x10total_partitions\x18\x03 \x01(\x03R\x0ftotalPartitions\"\xe0\x01\n" +
+	"\vColumnStats\x12\x1b\n" +
+	"\tcolumn_id\x18\x01 \x01(\x05R\bcolumnId\x12\x1d\n" +
+	"\n" +
+	"null_count\x18\x02 \x01(\x03R\tnullCount\x12\x1b\n" +
+	"\tnan_count\x18\x03 \x01(\x03R\bnanCount\x12\x1f\n" +
+	"\vvalue_count\x18\x04 \x01(\x03R\n" +
+	"valueCount\x12\x1b\n" +
+	"\tmin_value\x18\x05 \x01(\tR\bminValue\x12\x1b\n" +
+	"\tmax_value\x18\x06 \x01(\tR\bmaxValue\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\a \x01(\x03R\tsizeBytes\"\x92\x02\n" +
 	"\rPartitionInfo\x12#\n" +
 	"\rpartition_key\x18\x01 \x01(\tR\fpartitionKey\x12$\n" +
 	"\x0edata_file_path\x18\x02 \x01(\tR\fdataFilePath\x12\x1b\n" +
@@ -2458,11 +2760,8 @@ const file_metadata_service_proto_rawDesc = "" +
 	"\vsnapshot_id\x18\x05 \x01(\x04R\n" +
 	"snapshotId\x12\x1f\n" +
 	"\vfile_format\x18\x06 \x01(\tR\n" +
-	"fileFormat\x12K\n" +
-	"\fcolumn_stats\x18\a \x03(\v2(.metadata.PartitionInfo.ColumnStatsEntryR\vcolumnStats\x1a>\n" +
-	"\x10ColumnStatsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xaf\x01\n" +
+	"fileFormat\x128\n" +
+	"\fcolumn_stats\x18\a \x03(\v2\x15.metadata.ColumnStatsR\vcolumnStats\"\xaf\x01\n" +
 	"\x10PartitionRequest\x12\x1d\n" +
 	"\n" +
 	"table_name\x18\x01 \x01(\tR\ttableName\x12\x1f\n" +
@@ -2582,7 +2881,25 @@ const file_metadata_service_proto_rawDesc = "" +
 	"\x12GetManifestRequest\x12\x1d\n" +
 	"\n" +
 	"table_name\x18\x01 \x01(\tR\ttableName\x12(\n" +
-	"\x10manifest_file_id\x18\x02 \x01(\x03R\x0emanifestFileId\"\x9e\x03\n" +
+	"\x10manifest_file_id\x18\x02 \x01(\x03R\x0emanifestFileId\"W\n" +
+	"\x15GetColumnStatsRequest\x12\x1d\n" +
+	"\n" +
+	"table_name\x18\x01 \x01(\tR\ttableName\x12\x1f\n" +
+	"\vsnapshot_id\x18\x02 \x01(\x04R\n" +
+	"snapshotId\"\xc2\x01\n" +
+	"\fColumnBounds\x12\x1b\n" +
+	"\tcolumn_id\x18\x01 \x01(\x05R\bcolumnId\x12\x1b\n" +
+	"\tmin_value\x18\x02 \x01(\tR\bminValue\x12\x1b\n" +
+	"\tmax_value\x18\x03 \x01(\tR\bmaxValue\x12\x1d\n" +
+	"\n" +
+	"null_count\x18\x04 \x01(\x03R\tnullCount\x12\x1b\n" +
+	"\tnan_count\x18\x05 \x01(\x03R\bnanCount\x12\x1f\n" +
+	"\vvalue_count\x18\x06 \x01(\x03R\n" +
+	"valueCount\"v\n" +
+	"\x16GetColumnStatsResponse\x12\x1f\n" +
+	"\vsnapshot_id\x18\x01 \x01(\x04R\n" +
+	"snapshotId\x12;\n" +
+	"\rcolumn_bounds\x18\x02 \x03(\v2\x16.metadata.ColumnBoundsR\fcolumnBounds\"\x9e\x03\n" +
 	"\x12ManifestFileDetail\x12(\n" +
 	"\x10manifest_file_id\x18\x01 \x01(\x03R\x0emanifestFileId\x12\x1f\n" +
 	"\vsnapshot_id\x18\x02 \x01(\x04R\n" +
@@ -2605,8 +2922,7 @@ const file_metadata_service_proto_rawDesc = "" +
 	"\x04HOUR\x10\x04\x12\n" +
 	"\n" +
 	"\x06BUCKET\x10\x05\x12\f\n" +
-	"\bTRUNCATE\x10\x062\xc5\n" +
-	"\n" +
+	"\bTRUNCATE\x10\x062\x9a\v\n" +
 	"\x0fMetadataService\x12H\n" +
 	"\vCreateTable\x12\x1c.metadata.CreateTableRequest\x1a\x1b.metadata.OperationResponse\x12K\n" +
 	"\x10GetTableMetadata\x12\x16.metadata.TableRequest\x1a\x1f.metadata.TableMetadataResponse\x12F\n" +
@@ -2616,7 +2932,8 @@ const file_metadata_service_proto_rawDesc = "" +
 	"\n" +
 	"ListTables\x12\x1b.metadata.ListTablesRequest\x1a\x1c.metadata.ListTablesResponse\x12L\n" +
 	"\rGetPartitions\x12\x1a.metadata.PartitionRequest\x1a\x1f.metadata.PartitionListResponse\x12V\n" +
-	"\x11GetPartitionStats\x12\x1f.metadata.PartitionStatsRequest\x1a .metadata.PartitionStatsResponse\x12G\n" +
+	"\x11GetPartitionStats\x12\x1f.metadata.PartitionStatsRequest\x1a .metadata.PartitionStatsResponse\x12S\n" +
+	"\x0eGetColumnStats\x12\x1f.metadata.GetColumnStatsRequest\x1a .metadata.GetColumnStatsResponse\x12G\n" +
 	"\x0eCommitSnapshot\x12\x19.metadata.SnapshotRequest\x1a\x1a.metadata.SnapshotResponse\x12E\n" +
 	"\vGetSnapshot\x12\x1c.metadata.GetSnapshotRequest\x1a\x18.metadata.SnapshotDetail\x12P\n" +
 	"\rListSnapshots\x12\x1e.metadata.ListSnapshotsRequest\x1a\x1f.metadata.ListSnapshotsResponse\x12O\n" +
@@ -2641,7 +2958,7 @@ func file_metadata_service_proto_rawDescGZIP() []byte {
 }
 
 var file_metadata_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_metadata_service_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
+var file_metadata_service_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
 var file_metadata_service_proto_goTypes = []any{
 	(IsolationLevel)(0),                // 0: metadata.IsolationLevel
 	(PartitionTransform)(0),            // 1: metadata.PartitionTransform
@@ -2654,93 +2971,99 @@ var file_metadata_service_proto_goTypes = []any{
 	(*ListTablesRequest)(nil),          // 8: metadata.ListTablesRequest
 	(*ListTablesResponse)(nil),         // 9: metadata.ListTablesResponse
 	(*TableSummary)(nil),               // 10: metadata.TableSummary
-	(*PartitionInfo)(nil),              // 11: metadata.PartitionInfo
-	(*PartitionRequest)(nil),           // 12: metadata.PartitionRequest
-	(*PartitionListResponse)(nil),      // 13: metadata.PartitionListResponse
-	(*PartitionStatsRequest)(nil),      // 14: metadata.PartitionStatsRequest
-	(*PartitionStatsResponse)(nil),     // 15: metadata.PartitionStatsResponse
-	(*SnapshotRequest)(nil),            // 16: metadata.SnapshotRequest
-	(*SnapshotResponse)(nil),           // 17: metadata.SnapshotResponse
-	(*GetSnapshotRequest)(nil),         // 18: metadata.GetSnapshotRequest
-	(*SnapshotDetail)(nil),             // 19: metadata.SnapshotDetail
-	(*ListSnapshotsRequest)(nil),       // 20: metadata.ListSnapshotsRequest
-	(*ListSnapshotsResponse)(nil),      // 21: metadata.ListSnapshotsResponse
-	(*TransactionRequest)(nil),         // 22: metadata.TransactionRequest
-	(*TransactionResponse)(nil),        // 23: metadata.TransactionResponse
-	(*CommitRequest)(nil),              // 24: metadata.CommitRequest
-	(*AbortRequest)(nil),               // 25: metadata.AbortRequest
-	(*OperationResponse)(nil),          // 26: metadata.OperationResponse
-	(*PartitionField)(nil),             // 27: metadata.PartitionField
-	(*PartitionSpecProto)(nil),         // 28: metadata.PartitionSpecProto
-	(*GetPartitionSpecRequest)(nil),    // 29: metadata.GetPartitionSpecRequest
-	(*PartitionSpecResponse)(nil),      // 30: metadata.PartitionSpecResponse
-	(*ListPartitionSpecsRequest)(nil),  // 31: metadata.ListPartitionSpecsRequest
-	(*ListPartitionSpecsResponse)(nil), // 32: metadata.ListPartitionSpecsResponse
-	(*GetManifestListRequest)(nil),     // 33: metadata.GetManifestListRequest
-	(*ManifestFileSummary)(nil),        // 34: metadata.ManifestFileSummary
-	(*ManifestListResponse)(nil),       // 35: metadata.ManifestListResponse
-	(*GetManifestRequest)(nil),         // 36: metadata.GetManifestRequest
-	(*ManifestFileDetail)(nil),         // 37: metadata.ManifestFileDetail
-	nil,                                // 38: metadata.CreateTableRequest.PropertiesEntry
-	nil,                                // 39: metadata.TableMetadataResponse.PropertiesEntry
-	nil,                                // 40: metadata.PartitionInfo.ColumnStatsEntry
+	(*ColumnStats)(nil),                // 11: metadata.ColumnStats
+	(*PartitionInfo)(nil),              // 12: metadata.PartitionInfo
+	(*PartitionRequest)(nil),           // 13: metadata.PartitionRequest
+	(*PartitionListResponse)(nil),      // 14: metadata.PartitionListResponse
+	(*PartitionStatsRequest)(nil),      // 15: metadata.PartitionStatsRequest
+	(*PartitionStatsResponse)(nil),     // 16: metadata.PartitionStatsResponse
+	(*SnapshotRequest)(nil),            // 17: metadata.SnapshotRequest
+	(*SnapshotResponse)(nil),           // 18: metadata.SnapshotResponse
+	(*GetSnapshotRequest)(nil),         // 19: metadata.GetSnapshotRequest
+	(*SnapshotDetail)(nil),             // 20: metadata.SnapshotDetail
+	(*ListSnapshotsRequest)(nil),       // 21: metadata.ListSnapshotsRequest
+	(*ListSnapshotsResponse)(nil),      // 22: metadata.ListSnapshotsResponse
+	(*TransactionRequest)(nil),         // 23: metadata.TransactionRequest
+	(*TransactionResponse)(nil),        // 24: metadata.TransactionResponse
+	(*CommitRequest)(nil),              // 25: metadata.CommitRequest
+	(*AbortRequest)(nil),               // 26: metadata.AbortRequest
+	(*OperationResponse)(nil),          // 27: metadata.OperationResponse
+	(*PartitionField)(nil),             // 28: metadata.PartitionField
+	(*PartitionSpecProto)(nil),         // 29: metadata.PartitionSpecProto
+	(*GetPartitionSpecRequest)(nil),    // 30: metadata.GetPartitionSpecRequest
+	(*PartitionSpecResponse)(nil),      // 31: metadata.PartitionSpecResponse
+	(*ListPartitionSpecsRequest)(nil),  // 32: metadata.ListPartitionSpecsRequest
+	(*ListPartitionSpecsResponse)(nil), // 33: metadata.ListPartitionSpecsResponse
+	(*GetManifestListRequest)(nil),     // 34: metadata.GetManifestListRequest
+	(*ManifestFileSummary)(nil),        // 35: metadata.ManifestFileSummary
+	(*ManifestListResponse)(nil),       // 36: metadata.ManifestListResponse
+	(*GetManifestRequest)(nil),         // 37: metadata.GetManifestRequest
+	(*GetColumnStatsRequest)(nil),      // 38: metadata.GetColumnStatsRequest
+	(*ColumnBounds)(nil),               // 39: metadata.ColumnBounds
+	(*GetColumnStatsResponse)(nil),     // 40: metadata.GetColumnStatsResponse
+	(*ManifestFileDetail)(nil),         // 41: metadata.ManifestFileDetail
+	nil,                                // 42: metadata.CreateTableRequest.PropertiesEntry
+	nil,                                // 43: metadata.TableMetadataResponse.PropertiesEntry
 }
 var file_metadata_service_proto_depIdxs = []int32{
-	38, // 0: metadata.CreateTableRequest.properties:type_name -> metadata.CreateTableRequest.PropertiesEntry
-	11, // 1: metadata.TableMetadataResponse.partitions:type_name -> metadata.PartitionInfo
-	39, // 2: metadata.TableMetadataResponse.properties:type_name -> metadata.TableMetadataResponse.PropertiesEntry
-	28, // 3: metadata.AlterTableRequest.new_partition_spec:type_name -> metadata.PartitionSpecProto
+	42, // 0: metadata.CreateTableRequest.properties:type_name -> metadata.CreateTableRequest.PropertiesEntry
+	12, // 1: metadata.TableMetadataResponse.partitions:type_name -> metadata.PartitionInfo
+	43, // 2: metadata.TableMetadataResponse.properties:type_name -> metadata.TableMetadataResponse.PropertiesEntry
+	29, // 3: metadata.AlterTableRequest.new_partition_spec:type_name -> metadata.PartitionSpecProto
 	6,  // 4: metadata.AlterTableRequest.rename:type_name -> metadata.RenameTable
 	10, // 5: metadata.ListTablesResponse.tables:type_name -> metadata.TableSummary
-	40, // 6: metadata.PartitionInfo.column_stats:type_name -> metadata.PartitionInfo.ColumnStatsEntry
-	11, // 7: metadata.PartitionListResponse.partitions:type_name -> metadata.PartitionInfo
-	11, // 8: metadata.SnapshotRequest.new_partitions:type_name -> metadata.PartitionInfo
-	19, // 9: metadata.ListSnapshotsResponse.snapshots:type_name -> metadata.SnapshotDetail
+	11, // 6: metadata.PartitionInfo.column_stats:type_name -> metadata.ColumnStats
+	12, // 7: metadata.PartitionListResponse.partitions:type_name -> metadata.PartitionInfo
+	12, // 8: metadata.SnapshotRequest.new_partitions:type_name -> metadata.PartitionInfo
+	20, // 9: metadata.ListSnapshotsResponse.snapshots:type_name -> metadata.SnapshotDetail
 	0,  // 10: metadata.TransactionRequest.isolation:type_name -> metadata.IsolationLevel
 	1,  // 11: metadata.PartitionField.transform:type_name -> metadata.PartitionTransform
-	27, // 12: metadata.PartitionSpecProto.fields:type_name -> metadata.PartitionField
-	28, // 13: metadata.PartitionSpecResponse.spec:type_name -> metadata.PartitionSpecProto
-	30, // 14: metadata.ListPartitionSpecsResponse.specs:type_name -> metadata.PartitionSpecResponse
-	34, // 15: metadata.ManifestListResponse.manifests:type_name -> metadata.ManifestFileSummary
-	2,  // 16: metadata.MetadataService.CreateTable:input_type -> metadata.CreateTableRequest
-	3,  // 17: metadata.MetadataService.GetTableMetadata:input_type -> metadata.TableRequest
-	5,  // 18: metadata.MetadataService.AlterTable:input_type -> metadata.AlterTableRequest
-	7,  // 19: metadata.MetadataService.DropTable:input_type -> metadata.DropTableRequest
-	8,  // 20: metadata.MetadataService.ListTables:input_type -> metadata.ListTablesRequest
-	12, // 21: metadata.MetadataService.GetPartitions:input_type -> metadata.PartitionRequest
-	14, // 22: metadata.MetadataService.GetPartitionStats:input_type -> metadata.PartitionStatsRequest
-	16, // 23: metadata.MetadataService.CommitSnapshot:input_type -> metadata.SnapshotRequest
-	18, // 24: metadata.MetadataService.GetSnapshot:input_type -> metadata.GetSnapshotRequest
-	20, // 25: metadata.MetadataService.ListSnapshots:input_type -> metadata.ListSnapshotsRequest
-	22, // 26: metadata.MetadataService.BeginTransaction:input_type -> metadata.TransactionRequest
-	24, // 27: metadata.MetadataService.CommitTransaction:input_type -> metadata.CommitRequest
-	25, // 28: metadata.MetadataService.AbortTransaction:input_type -> metadata.AbortRequest
-	33, // 29: metadata.MetadataService.GetManifestList:input_type -> metadata.GetManifestListRequest
-	36, // 30: metadata.MetadataService.GetManifest:input_type -> metadata.GetManifestRequest
-	29, // 31: metadata.MetadataService.GetPartitionSpec:input_type -> metadata.GetPartitionSpecRequest
-	31, // 32: metadata.MetadataService.ListPartitionSpecs:input_type -> metadata.ListPartitionSpecsRequest
-	26, // 33: metadata.MetadataService.CreateTable:output_type -> metadata.OperationResponse
-	4,  // 34: metadata.MetadataService.GetTableMetadata:output_type -> metadata.TableMetadataResponse
-	26, // 35: metadata.MetadataService.AlterTable:output_type -> metadata.OperationResponse
-	26, // 36: metadata.MetadataService.DropTable:output_type -> metadata.OperationResponse
-	9,  // 37: metadata.MetadataService.ListTables:output_type -> metadata.ListTablesResponse
-	13, // 38: metadata.MetadataService.GetPartitions:output_type -> metadata.PartitionListResponse
-	15, // 39: metadata.MetadataService.GetPartitionStats:output_type -> metadata.PartitionStatsResponse
-	17, // 40: metadata.MetadataService.CommitSnapshot:output_type -> metadata.SnapshotResponse
-	19, // 41: metadata.MetadataService.GetSnapshot:output_type -> metadata.SnapshotDetail
-	21, // 42: metadata.MetadataService.ListSnapshots:output_type -> metadata.ListSnapshotsResponse
-	23, // 43: metadata.MetadataService.BeginTransaction:output_type -> metadata.TransactionResponse
-	26, // 44: metadata.MetadataService.CommitTransaction:output_type -> metadata.OperationResponse
-	26, // 45: metadata.MetadataService.AbortTransaction:output_type -> metadata.OperationResponse
-	35, // 46: metadata.MetadataService.GetManifestList:output_type -> metadata.ManifestListResponse
-	37, // 47: metadata.MetadataService.GetManifest:output_type -> metadata.ManifestFileDetail
-	30, // 48: metadata.MetadataService.GetPartitionSpec:output_type -> metadata.PartitionSpecResponse
-	32, // 49: metadata.MetadataService.ListPartitionSpecs:output_type -> metadata.ListPartitionSpecsResponse
-	33, // [33:50] is the sub-list for method output_type
-	16, // [16:33] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	28, // 12: metadata.PartitionSpecProto.fields:type_name -> metadata.PartitionField
+	29, // 13: metadata.PartitionSpecResponse.spec:type_name -> metadata.PartitionSpecProto
+	31, // 14: metadata.ListPartitionSpecsResponse.specs:type_name -> metadata.PartitionSpecResponse
+	35, // 15: metadata.ManifestListResponse.manifests:type_name -> metadata.ManifestFileSummary
+	39, // 16: metadata.GetColumnStatsResponse.column_bounds:type_name -> metadata.ColumnBounds
+	2,  // 17: metadata.MetadataService.CreateTable:input_type -> metadata.CreateTableRequest
+	3,  // 18: metadata.MetadataService.GetTableMetadata:input_type -> metadata.TableRequest
+	5,  // 19: metadata.MetadataService.AlterTable:input_type -> metadata.AlterTableRequest
+	7,  // 20: metadata.MetadataService.DropTable:input_type -> metadata.DropTableRequest
+	8,  // 21: metadata.MetadataService.ListTables:input_type -> metadata.ListTablesRequest
+	13, // 22: metadata.MetadataService.GetPartitions:input_type -> metadata.PartitionRequest
+	15, // 23: metadata.MetadataService.GetPartitionStats:input_type -> metadata.PartitionStatsRequest
+	38, // 24: metadata.MetadataService.GetColumnStats:input_type -> metadata.GetColumnStatsRequest
+	17, // 25: metadata.MetadataService.CommitSnapshot:input_type -> metadata.SnapshotRequest
+	19, // 26: metadata.MetadataService.GetSnapshot:input_type -> metadata.GetSnapshotRequest
+	21, // 27: metadata.MetadataService.ListSnapshots:input_type -> metadata.ListSnapshotsRequest
+	23, // 28: metadata.MetadataService.BeginTransaction:input_type -> metadata.TransactionRequest
+	25, // 29: metadata.MetadataService.CommitTransaction:input_type -> metadata.CommitRequest
+	26, // 30: metadata.MetadataService.AbortTransaction:input_type -> metadata.AbortRequest
+	34, // 31: metadata.MetadataService.GetManifestList:input_type -> metadata.GetManifestListRequest
+	37, // 32: metadata.MetadataService.GetManifest:input_type -> metadata.GetManifestRequest
+	30, // 33: metadata.MetadataService.GetPartitionSpec:input_type -> metadata.GetPartitionSpecRequest
+	32, // 34: metadata.MetadataService.ListPartitionSpecs:input_type -> metadata.ListPartitionSpecsRequest
+	27, // 35: metadata.MetadataService.CreateTable:output_type -> metadata.OperationResponse
+	4,  // 36: metadata.MetadataService.GetTableMetadata:output_type -> metadata.TableMetadataResponse
+	27, // 37: metadata.MetadataService.AlterTable:output_type -> metadata.OperationResponse
+	27, // 38: metadata.MetadataService.DropTable:output_type -> metadata.OperationResponse
+	9,  // 39: metadata.MetadataService.ListTables:output_type -> metadata.ListTablesResponse
+	14, // 40: metadata.MetadataService.GetPartitions:output_type -> metadata.PartitionListResponse
+	16, // 41: metadata.MetadataService.GetPartitionStats:output_type -> metadata.PartitionStatsResponse
+	40, // 42: metadata.MetadataService.GetColumnStats:output_type -> metadata.GetColumnStatsResponse
+	18, // 43: metadata.MetadataService.CommitSnapshot:output_type -> metadata.SnapshotResponse
+	20, // 44: metadata.MetadataService.GetSnapshot:output_type -> metadata.SnapshotDetail
+	22, // 45: metadata.MetadataService.ListSnapshots:output_type -> metadata.ListSnapshotsResponse
+	24, // 46: metadata.MetadataService.BeginTransaction:output_type -> metadata.TransactionResponse
+	27, // 47: metadata.MetadataService.CommitTransaction:output_type -> metadata.OperationResponse
+	27, // 48: metadata.MetadataService.AbortTransaction:output_type -> metadata.OperationResponse
+	36, // 49: metadata.MetadataService.GetManifestList:output_type -> metadata.ManifestListResponse
+	41, // 50: metadata.MetadataService.GetManifest:output_type -> metadata.ManifestFileDetail
+	31, // 51: metadata.MetadataService.GetPartitionSpec:output_type -> metadata.PartitionSpecResponse
+	33, // 52: metadata.MetadataService.ListPartitionSpecs:output_type -> metadata.ListPartitionSpecsResponse
+	35, // [35:53] is the sub-list for method output_type
+	17, // [17:35] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_metadata_service_proto_init() }
@@ -2759,7 +3082,7 @@ func file_metadata_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_metadata_service_proto_rawDesc), len(file_metadata_service_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   39,
+			NumMessages:   42,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
