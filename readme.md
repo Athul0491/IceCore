@@ -1,6 +1,6 @@
-# IceLog
+# IceCore
 
-IceLog is a Go + gRPC metadata control plane for lakehouse-style table catalogs. It tracks table schemas, partition files, immutable snapshots, and lightweight transaction state in PostgreSQL, then serves that metadata through a typed gRPC API.
+IceCore is a Go + gRPC metadata control plane for lakehouse-style table catalogs. It tracks table schemas, partition files, immutable snapshots, and lightweight transaction state in PostgreSQL, then serves that metadata through a typed gRPC API.
 
 Built to demonstrate backend systems work: concurrency control, snapshot isolation concepts, cache invalidation, durable metadata storage, Dockerized local development, and CI-backed tests.
 
